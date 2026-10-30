@@ -1,0 +1,1 @@
+fn menu(block:&str)->core::ops::ControlFlow<Option<&'static str>>{if block.starts_with("create:"){core::ops::ControlFlow::Break(Some("minecraft:generic_9x3"))}else{core::ops::ControlFlow::Continue(())}}

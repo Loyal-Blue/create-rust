@@ -1,0 +1,9 @@
+Create Rust experimental build: content 0.5.0 + native support 0.3.0
+
+Put this .hmod in horizon-mods/ and create-preview-support.hnmod in horizon-native-mods/ for the SAME instance. Replace old copies. Set mod.create:true and mod.create_preview_support:true in horizon-mods.txt. Build through Native Mods -> Build, then launch that build and restart fully after updates.
+
+Both files are required for machinery. The .hmod alone supplies static content. Native source pins Horizon 47a3b39fa9e419ec03221fca5ef402d58e831f14.
+
+Create is on creative inventory page 2. Wrench rotates; sneak reverses. Empty-hand motor clicks cycle speed; sneak reverses drive. Machine inputs are the top row, outputs the middle row. See repository README and docs/FUNCTIONAL_SCOPE.md for machinery arrangements and limitations.
+
+This is not a complete Create port. No in-game validation has been performed for this expanded build.

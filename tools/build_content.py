@@ -13,7 +13,8 @@ with zipfile.ZipFile(a.assets_from) as source:
 for f in (root/'content').rglob('*'):
  if f.is_file():entries[str(f.relative_to(root/'content'))]=f.read_bytes()
 if not any(n.startswith('assets/create/models/') for n in entries):raise SystemExit('Input contains no Create model assets')
-entries['INSTALL.txt']=b'Data-only static content preview. No working rotation or inventory pagination. Enable mod.create:true and restart.\n'
+entries['INSTALL.txt']=(root/'docs/INSTALL.txt').read_bytes()
+entries['VALIDATION.md']=(root/'docs/VALIDATION.md').read_bytes()
 entries['NOTICE.md']=(root/'NOTICE.md').read_bytes()
 a.output.parent.mkdir(parents=True,exist_ok=True)
 with zipfile.ZipFile(a.output,'w',zipfile.ZIP_DEFLATED) as out:

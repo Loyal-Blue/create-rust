@@ -21,4 +21,4 @@ Needed upstream work:
 
 Suggested rotation adapter: reconstruct loaded coaxial topology from authoritative states; sample actual flow vectors; call the prototype core once per tick; send RPM/jam/phase changes; interpolate partial-model rotation on clients; stop disconnected and unloaded networks; persist state by dimension and block position. Extend beyond the first-stage solver before adding gears/stress.
 
-No upstream patch or runtime implementation of this proposal is included. This document identifies prerequisites instead of claiming unavailable APIs exist.
+No upstream standard-API patch is included. Native support implements project-specific adapters around these gaps; this document describes what a future standard executable-mod API would need.

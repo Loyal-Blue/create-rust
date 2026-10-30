@@ -1,0 +1,1 @@
+fn drop_contents(name:&str)->core::ops::ControlFlow<PreRemove>{if name.starts_with("create:"){core::ops::ControlFlow::Break(PreRemove::Contents{slots:27,furnace:false})}else{core::ops::ControlFlow::Continue(())}}

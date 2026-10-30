@@ -1,7 +1,7 @@
 id = "create"
 name = "Create: Horizon Content Preview"
-version = "0.4.0"
-description = "Original Create 6.0.10 textures and item models adapted from your supplied JAR. Static block previews only; machine gameplay is not included."
+version = "0.5.0"
+description = "Registry and local assets for the experimental Create machinery runtime. Requires Create Preview Support 0.3.0 for processing, rotation and inventory pages."
 authors = ["Original assets: The Create Team", "Horizon format adaptation: Codex"]
 api = "0.2"
 side = "both"

@@ -1,21 +1,117 @@
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.03s
+   Compiling create-runtime v0.4.0 (/workspace/scratch/bb7f3b11e14c/create-horizon-project/crates/create-machines)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.29s
      Running unittests src/lib.rs (create-horizon-project/target/debug/deps/create_horizon_core-579881f82d9c204b)
 
 running 10 tests
 test tests::directional_placement_has_all_six_faces ... ok
 test tests::radial_flow_does_not_drive_a_wheel ... ok
-test tests::shaft_alignment_can_be_bypassed ... ok
 test tests::perpendicular_shafts_do_not_connect ... ok
 test tests::connected_shaft_rotates_then_stops_when_source_removed ... ok
+test tests::incompatible_sources_jam_and_recover ... ok
+test tests::shaft_alignment_can_be_bypassed ... ok
 test tests::rotation_wraps_and_frame_duration_is_consistent ... ok
 test tests::still_water_stops_and_reversed_flow_reverses ... ok
-test tests::wrench_is_reversible ... ok
-test tests::incompatible_sources_jam_and_recover ... ok
 test tests::wheels_stay_horizontal_and_machines_upright ... ok
+test tests::wrench_is_reversible ... ok
 
-test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (create-horizon-project/target/debug/deps/create_kinetics-50e0eb15dd99a0e1)
+
+running 33 tests
+test state::port_tests::mixer_and_millstone_accept_vertical_drive ... ok
+test state::port_tests::physical_output_and_input_ports_follow_facing ... ok
+test state::tests::defaults_to_y_and_ignores_other_blocks ... ok
+test state::tests::reads_kind_and_axis ... ok
+test state::tests::wheels_and_cranks_start_off ... ok
+test tests::a_large_cog_does_not_mesh_with_a_small_one_beside_it ... ok
+test tests::a_shaft_crossways_does_not_connect ... ok
+test tests::a_shaft_line_keeps_its_speed ... ok
+test tests::a_slower_source_in_the_same_direction_is_overpowered ... ok
+test tests::a_ring_of_small_cogs_turns ... ok
+test tests::an_inactive_source_is_idle ... ok
+test tests::bevel_gears_have_reciprocal_signs_for_every_pair_of_axes ... ok
+test tests::configured_source_speed_clamps_and_nonfinite_stops ... ok
+test tests::disabled_clutch_splits_and_reengaging_merges ... ok
+test tests::extreme_coordinates_do_not_wrap_or_panic ... ok
+test tests::gearbox_routes_four_ports_in_plane ... ok
+test tests::ids_round_trip ... ok
+test tests::gearshift_reverses_only_the_output_half ... ok
+test tests::malformed_states_are_rejected_instead_of_silently_becoming_y ... ok
+test tests::large_to_small_doubles_and_small_to_large_halves ... ok
+test tests::missing_shaft_port_prevents_a_connection ... ok
+test tests::parallel_chain_drives_relay_rotation ... ok
+test tests::small_cogs_do_not_mesh_along_their_axis ... ok
+test tests::sources_pushing_against_each_other_conflict ... ok
+test tests::removing_a_bridge_and_a_source_recomputes_components ... ok
+test tests::small_cogs_side_by_side_reverse ... ok
+test tests::speed_up_beyond_the_cap_stops_every_member ... ok
+test tests::speeds_do_not_depend_on_insertion_order ... ok
+test tests::source_priority_accounts_for_all_gear_ratios ... ok
+test tests::too_much_stress_stops_the_network ... ok
+test tests::two_sources_add_their_capacity ... ok
+test tests::two_large_cogs_share_a_small_one ... ok
+test tests::a_long_reduction_train_does_not_lose_its_driver_to_float_overflow ... ok
+
+test result: ok. 33 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running unittests src/lib.rs (create-horizon-project/target/debug/deps/create_runtime-af7b194e6b6e9782)
+
+running 15 tests
+test tests::blocked_transfer_never_consumes ... ok
+test tests::fluid_transfer_conserves_total_and_budget ... ok
+test tests::component_inputs_are_preserved ... ok
+test tests::configured_motor_speed_is_validated_when_loading ... ok
+test tests::invalid_saved_data_is_rejected ... ok
+test tests::move_preserves_components_and_actual_limits ... ok
+test tests::full_output_preserves_inputs_and_rng ... ok
+test tests::fluid_capacity_and_roundtrip ... ok
+test worldgen::tests::never_retro_generates_existing_chunks ... ok
+test worldgen::tests::bounded_repeatable_veins ... ok
+test tests::processes_real_slots_only ... ok
+test tests::rotor_phase_survives_speed_changes_and_reload ... ok
+test tests::stale_inventory_cannot_commit ... ok
+test tests::geared_press_pipeline_survives_state_reload_and_conserves_items ... ok
+test tests::stopped_drive_cannot_process_or_consume_input ... ok
+
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (create-horizon-project/target/debug/deps/create_simulation-865efe183943e3a2)
+
+running 11 tests
+test tests::blocked_output_cannot_consume_inputs_or_reroll ... ok
+test tests::no_power_preserves_inputs_and_work ... ok
+test tests::malformed_saves_fail_closed ... ok
+test tests::repeated_ingredients_cannot_share_a_single_item ... ok
+test tests::actual_iron_pressing_consumes_exactly_one_ingot ... ok
+test tests::retained_tools_are_reserved_and_returned_after_a_craft ... ok
+test tests::stock_insertion_is_atomic_and_checks_stack_and_fluid_limits ... ok
+test tests::fluid_filling_reserves_both_the_bottle_and_fluid ... ok
+test tests::hot_mixing_requires_heat_and_at_least_32_rpm ... ok
+test tests::save_reload_preserves_recipe_progress_and_random_state ... ok
+test tests::every_imported_recipe_can_complete_with_valid_inputs ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
 
    Doc-tests create_horizon_core
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests create_kinetics
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests create_runtime
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests create_simulation
 
 running 0 tests
 

@@ -21,8 +21,8 @@ struct Config {
 struct TabItem { id: String, name: String }
 
 fn validate(config: &Config) -> crate::Result<()> {
-    if config.schema != 1 || config.blocks.len() != 34 || config.items.len() != 59 || config.blocks.get("create:creative_motor").is_none_or(|v| !v.contains_key("north")) {
-        return Err("Create support needs the matching 0.4.0 content preview".into());
+    if config.schema != 1 || config.blocks.len() < 34 || config.blocks.len() > 4096 || config.items.is_empty() || config.items.len() > 4096 || config.blocks.get("create:creative_motor").is_none_or(|v| !v.contains_key("north")) {
+        return Err("Create support needs the matching 0.5.0 content preview".into());
     }
     for variants in config.blocks.values() {
         for boxes in variants.values() {
@@ -157,12 +157,14 @@ fn replace(root: &Path, relative: &str, bytes: &[u8]) -> crate::Result<()> {
 
 pub(super) fn apply(root: &Path) -> crate::Result<()> {
     let path = root.join("data/create/create_preview/support.json");
-    if !path.exists() { return Err("Install Create content preview 0.4.0 alongside Create Preview Support".into()); }
+    if !path.exists() { return Err("Install Create content preview 0.5.0 alongside Create Preview Support".into()); }
     let config: Config = serde_json::from_slice(&fs::read(path)?)?;
     validate(&config)?;
     let mut changed = BTreeMap::new();
+    let mut state_names = BTreeMap::new();
     for relative in ["cached-collision.nbt","worldgen/blocks/cached-collision.nbt"] {
         let (mut named,_) = nbt::read_named(&fs::read(root.join(relative))?,nbt::Limits::tables())?;
+        if relative=="cached-collision.nbt" {if let Some(Tag::List(states))=named.tag.get("states") {for (id,s) in states.iter().enumerate() {state_names.insert(id,BlockState::from_nbt(s)?.name);}}}
         let edits = collision(&mut named.tag, &config)?;
         if relative=="cached-collision.nbt" { changed=edits; }
         replace(root,relative,&nbt::write_named(&named,nbt::Limits::tables())?)?;
@@ -173,6 +175,7 @@ pub(super) fn apply(root: &Path) -> crate::Result<()> {
         let row = states.get_mut(index).ok_or("Missing Create gameplay row")?;
         if row["id"].as_u64() != Some(index as u64) { return Err("Create gameplay state order mismatch".into()); }
         row["outline"]=json!(boxes);
+        row["block_entity"]=json!(!matches!(state_names.get(&index).map(String::as_str),Some("create:andesite_alloy_block"|"create:brass_block"|"create:zinc_block"|"create:andesite_casing"|"create:brass_casing"|"create:copper_casing"|"create:zinc_ore"|"create:deepslate_zinc_ore")));
         row["outline_edges"]=json!(edges(&boxes));
         row["full_collision"]=json!(boxes.iter().any(|b| *b == [0.0,0.0,0.0,1.0,1.0,1.0]));
     }
@@ -180,7 +183,7 @@ pub(super) fn apply(root: &Path) -> crate::Result<()> {
     // Hide static kinetic terrain only in the native overlay; the data-only
     // content archive keeps its normal static previews.
     replace(root,"assets/create/models/block/horizon_dynamic_empty.json",br#"{"elements":[],"textures":{"particle":"create:block/axis"}}"#)?;
-    for name in ["shaft","water_wheel","large_water_wheel"] {
+    for name in ["shaft","water_wheel","large_water_wheel","cogwheel","large_cogwheel","crushing_wheel"] {
         let relative=format!("assets/create/blockstates/{name}.json");
         let mut states: Value=serde_json::from_slice(&fs::read(root.join(&relative))?)?;
         if let Some(variants)=states["variants"].as_object_mut() {

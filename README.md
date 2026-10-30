@@ -2,49 +2,54 @@
 
 An independent, unfinished Create-style mod for Horizon Minecraft 26.3. Not affiliated with the Create Team or Horizon.
 
-## Current build: content 0.4.0 + native support 0.2.0
+## Current build: content 0.5.0 + native support 0.3.0
 
-Horizon standard content files cannot execute machinery code. Use the content `.hmod` and the experimental native `.hnmod` together. Native support is allowed for this project; the data-only pack remains a static preview on stock Horizon.
+This build connects machinery to server ticks, real inventory slots, chunk saves and client rotation updates. It includes 36 blocks and 36 standalone items. It is an experimental machinery baseline, not a complete port of Create. No running-game verification has been performed.
 
-Implemented in the new native source:
+- Directional placement, neighbor shaft alignment, upright press/mixer placement, wrench rotation, migrated saved states and corrected directional model assemblies.
+- Create category on creative inventory page **2**, with page controls above the inventory.
+- Water wheels, configurable creative motors and hand cranks; shafts, cog ratios, gearboxes, chain drives, clutches and gearshifts; stress limits and conflicting-source stops.
+- Transactional pressing, mixing, compacting, milling, cutting, crushing, fan processing, deploying recipes, filling and draining, when their inputs/outputs exist in the installed registry.
+- Burner fuel/heat, fluid storage and straight pipe pumping, chute/hopper integration, block drilling, and zinc in fresh overworld terrain.
+- Machine progress, fuel, fluids, RPM and phase saved with chunks; existing container storage saves the items. Server snapshots drive client rotation.
 
-- Facing states for motors and directional machines; six-direction placement for directional parts, horizontal orientation for upright machines, shaft alignment and a sneak bypass.
-- Wrench rotation (sneak reverses), and migration of older axis/waterlogged preview states for changed machines.
-- Create category on creative inventory page **2**, with `< 1 / 2 >` page controls above the inventory. Vanilla categories stay on page 1; search and inventory remain accessible.
-- Dynamic wheel and shaft meshes driven by a basic client-side coaxial network. Flowing-water torque drives wheels at 8 RPM; a creative motor drives at fixed 16 RPM. Disconnected shafts stop; conflicting sources jam. This first step is visual rotation, not an authoritative processing system.
+See [functional scope](docs/FUNCTIONAL_SCOPE.md) for per-system behavior and gaps. Belts, contraptions, trains, full world deployer/saw behavior, multiblock tanks and exact Create GUIs are still absent. The 338-entry recipe catalogue is broader than the installed content; unavailable outputs are filtered before processing.
 
-**Experimental: not tested in a running game.** Engine compilation and automated fixtures pass; those checks do not prove placement/rendering parity. Geometry and placement rules are approximations of static models. No full wheel clearance/multiblock structure checks, gears, stress, machine processing, belts, contraptions or trains are claimed.
+## Installation and controls
 
-## Installation
+Horizon standard content files cannot execute machinery code. Install both the content `.hmod` and experimental native `.hnmod`; the data-only pack remains static on stock Horizon.
 
-1. Put content `create.hmod` in the instance's `horizon-mods/`.
+1. Put `create-horizon-content-preview.hmod` in the instance's `horizon-mods/`.
 2. Put `create-preview-support.hnmod` in the same instance's `horizon-native-mods/`.
-3. In `horizon-mods.txt`, set `mod.create:true` and `mod.create_preview_support:true`.
-4. Use the launcher's **Native Mods → Build**, review its native-code notice, and launch that build. Restart fully after replacing content.
+3. Set `mod.create:true` and `mod.create_preview_support:true` in `horizon-mods.txt`.
+4. Use **Native Mods → Build**, review the launcher's native-code notice, and launch that build. Restart fully after replacing content. Replace older copies rather than enabling duplicate mod IDs.
 
-The native bundle pins Horizon `47a3b39fa9e419ec03221fca5ef402d58e831f14` (26.3) and horizon-mixins `cb1ad23022392d88f006cf94cbf6552a73f5df12`. Compatibility with every other native bundle is not guaranteed.
+Native support pins Horizon `47a3b39fa9e419ec03221fca5ef402d58e831f14` (26.3) and horizon-mixins `cb1ad23022392d88f006cf94cbf6552a73f5df12`. Other native bundles may conflict.
 
-Right-click a Create block with the wrench to rotate it. Use the page arrows above creative inventory to reach Create on page 2. For a first rotation test, place a horizontal wheel with flowing water along its rim and coaxial shafts touching the center. The sampled rim is one block from a small wheel's center and two from a large wheel's center. Creative motors supply a fixed prototype speed; there is no speed GUI yet.
+Right-click with a wrench to rotate; sneak reverses rotation order. Empty-hand right-click on a motor cycles 0/8/16/32/64/128/256 RPM; sneak reverses its drive. Click a crank for one second of drive. Empty-hand clicks toggle clutches or reverse gearshifts; redstone also controls them. Water-wheel rim sampling uses radius 1 for small wheels and 2 for large wheels.
 
-## Build
+Open machine containers to put inputs in the **top row** and collect outputs from the **middle row**. The bottom row is spare storage. Presses and mixers can use a depot/basin one or two blocks below; a press over a basin compacts. Put a fueled blaze burner below the basin for heated mixing. Spouts can fill items on a depot directly below. Coal/charcoal, blaze rods and blaze cakes fuel burners; cakes superheat. Buckets insert/extract fluids from tanks, basins, spouts and drains. A pump transfers along its shaft axis through up to 16 straight pipe blocks; reverse RPM to reverse flow. Sneak-right-click reports status.
 
-Original Create textures/models are **All Rights Reserved**, per the upstream [LICENSE.md](https://github.com/Creators-of-Create/Create/blob/mc1.21.1/dev/LICENSE.md). They are not committed. Import assets from your existing private preview locally:
+## Local asset build
+
+Original Create textures/models are **All Rights Reserved**, per upstream [LICENSE.md](https://github.com/Creators-of-Create/Create/blob/mc1.21.1/dev/LICENSE.md). They are not committed. Import your private preview assets locally:
 
 ```sh
-python3 tools/build_content.py --assets-from /path/to/create-horizon-content-preview.hmod --output dist/create.hmod
+python3 tools/build_content.py --assets-from /path/to/current-private-preview.hmod --output dist/create.hmod
 python3 tools/build_native.py --output dist/create-preview-support.hnmod
 ```
 
-The content builder takes the authored declarations from this repository and model/texture inputs from the private archive. Do not redistribute imported original art without appropriate permission. A public asset replacement set remains needed for a fully redistributable playable release. Neither the original JAR nor Mojang game assets are included.
+When upgrading older local assets, use `import_recipe_items.py` and `add_zinc_resources.py` with `--jar /path/to/your-create.jar --assets-from previous.hmod --output next.hmod`, then `prepare_world_models.py --assets-from next.hmod --output corrected.hmod` before the content build. Model preparation requires NumPy and SciPy. The original 1.21.1 Create 6.0.10 JAR is an asset input, not executable code for Horizon. Do not redistribute imported original art without appropriate permission. A public replacement asset set is still needed for an independently redistributable playable release. No Mojang resources are included.
 
-## Source and tests
+## Source and checks
 
-`crates/create-core` is the engine-independent placement/rotation core. `native/mixins/create_preview_support` connects it to the current engine; `tools/build_native.py` embeds the core into a self-contained native helper. `legacy/` preserves earlier alpha/runtime/SDK/native experiments without building them from the root workspace.
+The root workspace builds placement (`create-core`), transmission (`create-transmission`), recipes (`create-recipes`) and inventory transactions/persistence (`create-machines`). `tools/build_native.py` embeds those sources into the self-contained native runtime. Edit the crates and `runtime_body.rs`/`machines_body.rs`, not generated `runtime.rs`. `legacy/` retains earlier experiments outside the active workspace.
 
 ```sh
+cargo fmt --all --check
 cargo test --locked
 cargo clippy --all-targets -- -D warnings
 python3 tools/test_native_support.py --horizon /path/to/pinned/horizon
 ```
 
-The tests cover placement orientations, shaft alignment, water torque, topology changes, jams, phase integration, save migration, inventory-page visibility and safe resource overlays. See `docs/VALIDATION.md` for exactly what was checked. Horizon's standard API gaps remain documented in `docs/ENGINE_REQUIREMENTS.md` for a future standard-mod implementation.
+See [validation](docs/VALIDATION.md) for checks and their limits, and [standard API requirements](docs/ENGINE_REQUIREMENTS.md) for a future non-native implementation.

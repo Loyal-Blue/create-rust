@@ -1,6 +1,6 @@
 [mod]
 id = "create_preview_support"
-version = "0.2.0"
+version = "0.3.0"
 priority = 100
 
 [compatibility]
@@ -115,4 +115,87 @@ helper = "page_select.rs"
 bindings = [
  { name = "screen", ty = "&crate::creative::Creative", value = "&*self" },
  { name = "tab", ty = "usize", value = "tab" },
+]
+
+[[injection]]
+id = "server_tick"
+target = "horizon_client::game::native_hooks::Game<'_>::native_tick"
+kind = "HEAD"
+helper = "server_tick.rs"
+bindings = [
+ { name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" },
+]
+
+[[injection]]
+id = "synchronization"
+target = "horizon_client::game::remote::Game<'_>::handle_packet"
+kind = "HEAD"
+cancellable = true
+helper = "sync_machines.rs"
+bindings = [
+ { name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" },
+ { name = "packet", ty = "&horizon_protocol::packets::play::Clientbound", value = "&packet" },
+]
+
+[[injection]]
+id = "clear_machine"
+target = "horizon_client::game::spill::Game<'_>::flush_spill"
+kind = "HEAD"
+helper = "clear_machine.rs"
+bindings = [
+ { name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" },
+]
+
+[[injection]]
+id = "container_name"
+target = "horizon_client_render::containers::default_name_key"
+kind = "HEAD"
+cancellable = true
+helper = "container_name.rs"
+bindings = [
+ { name = "block", ty = "&str", value = "block" },
+]
+
+[[injection]]
+id = "container_menu"
+target = "horizon_client_render::containers::block_menu_type"
+kind = "HEAD"
+cancellable = true
+helper = "container_menu.rs"
+bindings = [
+ { name = "block", ty = "&str", value = "block" },
+]
+
+[[injection]]
+id = "machine_drops"
+target = "horizon_world::level::removal::pre_remove"
+kind = "HEAD"
+cancellable = true
+helper = "container_drop.rs"
+bindings = [
+ { name = "name", ty = "&str", value = "name" },
+]
+
+[[injection]]
+id = "hopper_input"
+target = "horizon_client::game::machines::Containers<'_>::can_place"
+kind = "HEAD"
+cancellable = true
+helper = "hopper_input.rs"
+bindings = [
+ { name = "containers", ty = "&crate::game::machines::Containers<'_>", value = "self" },
+ { name = "view", ty = "&crate::game::machines::View", value = "view" },
+ { name = "slot", ty = "usize", value = "slot" },
+]
+
+[[injection]]
+id = "hopper_output"
+target = "horizon_client::game::machines::Containers<'_>::can_take"
+kind = "HEAD"
+cancellable = true
+helper = "hopper_output.rs"
+bindings = [
+ { name = "containers", ty = "&crate::game::machines::Containers<'_>", value = "self" },
+ { name = "view", ty = "&crate::game::machines::View", value = "view" },
+ { name = "slot", ty = "usize", value = "slot" },
 ]

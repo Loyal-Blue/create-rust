@@ -1,15 +1,7 @@
 # Status
 
-The active path is now the experimental native runtime, plus a content pack. Standard `.hmod` files still cannot run the machinery code.
+Active build: content 0.5.0 plus native 0.3.0. The root transmission, recipe and inventory runtime crates now execute through the native server adapter; they are no longer merely historical experiments. Standard .hmod still cannot execute machinery.
 
-| Feature | Native implementation | Verification limit |
-| --- | --- | --- |
-| Model-based hitboxes | Existing box unions retained | Approximate static geometry |
-| Directional placement | Facing states, view/face/neighbor policy, upright machines | Engine compiles; no in-game parity test |
-| Saved states | Axis/waterlogged → facing migration for changed machines | Fixture tests |
-| Wrench | Right-click rotates; sneak reverses | Engine compilation |
-| Water wheel → shaft | Flow torque, coaxial topology, dynamic client meshes | Core tests and engine compilation; visual only |
-| Creative page 2 | Page navigation, hidden off-page categories, shared input positions | Visibility tests and engine compilation |
-| Processing/stress/gears | Not implemented in current runtime | Historical experiments are not enabled |
+Implemented: placement/model corrections, page-2 inventory category, source and gear transmission with stress, container-based machine processing, fluid/heat storage, simple automation, fresh-terrain zinc, chunk persistence and client state updates.
 
-The original input JAR and imported artwork remain local assets. Public source builds require a local asset input; this is not yet an independently redistributable playable release.
+This is a broad experimental baseline for the current block set, not nearly all of Create. Important original systems remain absent. Consult FUNCTIONAL_SCOPE.md for behavior and VALIDATION.md for evidence. Runtime integration has compiled, but has not been exercised in a running game.
