@@ -1,4 +1,4 @@
-# Functional scope: native 0.6.0
+# Functional scope: native 0.7.0
 
 These are implemented code paths, not claims of in-game validation or exact Java parity.
 
@@ -20,7 +20,7 @@ These are implemented code paths, not claims of in-game validation or exact Java
 | Basin, depot | Persistent 27-slot storage; visible depot stack, dropped-item capture and direct depot interactions | Exact original depot capacity, basin geometry/fluid display |
 | Blaze burner | Coal/charcoal/blaze-rod heat; blaze-cake superheat | Capturing blazes, original heat transitions and visuals |
 | Fluid tank | Single-fluid 8,000 mB total for new tank fills; legacy contents retained | Multiblock merging, original visuals and capacity rules |
-| Fluid pipe, mechanical pump | Signed RPM routes across loaded branches, 16 steps/256 nodes, one shared budget | Original arm geometry, pressure, valves, water-source extraction, pump-series propagation |
+| Fluid pipe, mechanical pump | Signed RPM routes across loaded branches, 16 steps/256 nodes, one shared budget; renewable-water intakes | Original arm geometry, pressure, valves, finite-fluid extraction, pump-series propagation |
 | Spout, item drain | Spout inventory/depot/belt filling, proper water bottles, five generic bucket types; inventory/top-surface draining | Arbitrary potion conversion and original fluid rendering |
 | Flat belt | Real dropped-item movement; straight shaft coupling; reversal/stalls; connector placement | Slopes, junctions, covers, entity transport and belt-surface animation |
 | Andesite/brass funnel | Import/export, redstone pause, amounts, brass item-ID filter, machine slot rules | Smart filter lists, NBT matching, full original model states and side rules |
@@ -28,7 +28,7 @@ These are implemented code paths, not claims of in-game validation or exact Java
 | Hoppers | Machine top-row insertion/middle-row extraction | Original side-specific automation rules |
 | Zinc/deepslate zinc ores | Fresh overworld generation, raw zinc drops, smelt/blast zinc | Exact distribution, fortune/silk rules; no retro-generation |
 | Casings, alloy/brass/zinc blocks | Placeable material blocks and recipes | Interactive encasing of drives |
-| Standalone materials/foods/wrench | Registered art, recipes, wrench rotation | Tea effects, XP-nugget use, full original food effects |
+| Standalone materials/foods/wrench | Registered art, recipes, wrench rotation; explicit food values, tea Haste and XP-nugget use | Exact original effects/food balance; remote XP-nugget use |
 | Creative inventory | 76 entries on page 2 with search | Running-game layout/input verification |
 | Persistence/network | Chunk metadata for machines; ordinary block-entity item storage; server snapshots | Real save/rejoin/multiplayer verification |
 

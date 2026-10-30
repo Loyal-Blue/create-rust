@@ -35,5 +35,15 @@ with tempfile.TemporaryDirectory(prefix='create-support-tests-') as tmp:
     source += '#[cfg(test)] mod bridge { use create_runtime as machines; use create_simulation as recipes; use horizon_items::items::ItemStack;\n'
     source += 'mod horizon_client {pub use horizon_items::item_data;pub use horizon_client_core::snbt;}\n'
     source += bridge + (n / 'surface_items.rs').read_text() + '\nmod tests {\n' + (r / 'tests/native_machine_bridge.rs').read_text() + '\n}}\n'
+    assets = t / 'food-assets'
+    (assets / 'data/minecraft/loot_table').mkdir(parents=True)
+    for kind in ['block', 'item', 'entity_type']:
+        (assets / f'data/minecraft/tags/{kind}').mkdir(parents=True)
+    food_items = {}
+    for name in ['bar_of_chocolate', 'honeyed_apple', 'chocolate_glazed_berries', 'builders_tea']:
+        definition = json.loads((r / f'content/data/create/horizon/item/{name}.json').read_text())
+        food_items[f'create:{name}'] = dict(definition['components'], **{'minecraft:max_stack_size': 64})
+    (assets / 'items.json').write_text(json.dumps(food_items))
+    source += '#[cfg(test)] mod food { #[test] fn authored_food_components_load_through_horizon() { let items=horizon_items::items::Items::catalog(std::path::Path::new(' + json.dumps(str(assets)) + '),&horizon_world::loot::PackOverlay::NONE).unwrap(); let tea=items.get("create:builders_tea").unwrap(); assert!(tea.can_always_eat); assert_eq!(tea.use_remainder.as_deref(),Some("minecraft:glass_bottle")); assert_eq!(tea.consumable.as_ref().unwrap().seconds,2.0); assert!(matches!(tea.consumable.as_ref().unwrap().animation,horizon_world::consumable::UseAnimation::Drink)); let effects=&tea.consumable.as_ref().unwrap().effects; assert!(effects.iter().any(|e|matches!(e,horizon_items::items::ConsumeEffect::ApplyEffects{effects,probability} if *probability==1.0 && effects.iter().any(|e|e.id=="minecraft:haste" && e.duration==3600 && e.amplifier==0)))); assert_eq!(items.get("create:bar_of_chocolate").unwrap().food,Some((6,7.2))); assert_eq!(items.get("create:honeyed_apple").unwrap().food,Some((8,9.6))); assert_eq!(items.get("create:chocolate_glazed_berries").unwrap().food,Some((6,7.2))); }}\n'
     (t / 'src/lib.rs').write_text(source)
     subprocess.run(['cargo', 'test', '--manifest-path', str(t / 'Cargo.toml')], check=True)

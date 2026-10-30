@@ -1,1 +1,16 @@
-{"template": "minecraft:cookie", "max_stack_size": 64}
+{
+  "template": "minecraft:cookie",
+  "max_stack_size": 64,
+  "components": {
+    "minecraft:food": {
+      "nutrition": 8,
+      "saturation": 9.6
+    },
+    "minecraft:consumable": {
+      "consume_seconds": 1.6,
+      "animation": "eat",
+      "sound": "minecraft:entity.generic.eat",
+      "has_consume_particles": true
+    }
+  }
+}

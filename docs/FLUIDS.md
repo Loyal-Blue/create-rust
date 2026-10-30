@@ -1,4 +1,4 @@
-# Fluid routing: native 0.6.0
+# Fluid routing: native 0.7.0
 
 A pump routes fluid between ports on the two sides of its axis. Positive/negative RPM choose opposite inlet/outlet sides. Pipes can branch and turn through face-adjacent pipe blocks; tanks, basins, spouts, item drains and mechanical mixers are endpoints. Endpoints do not act as additional pipes, and pumps do not traverse other pumps.
 
@@ -6,4 +6,8 @@ Each scan is limited to 16 steps from a pump side and 256 visited nodes. Unloade
 
 New tank fills hold one fluid and enforce 8,000 mB across input/output storage combined. Older larger or mixed contents remain saved and can be drained; new incompatible fills are refused. Basins and machine stores retain the prototype's separate multi-fluid input/output buffers. Bucket extraction can combine the same fluid from both buffers atomically. Refused bucket interactions do not dump the bucket into the world.
 
-Pipe visuals remain simple static geometry: branching flow does not yet create original connected arm/casing models. There is no pressure simulation, source-fluid extraction, hose pulley, valve, pump-series propagation, multiblock tank merging or exact original fluid behavior. These code paths compile and pass conservation tests, but have not been exercised in a running game.
+## Renewable water
+
+A water source touching a pump or a connected pipe is an intake when it has at least two cardinal water-source neighbors and solid support or another water source below. The relevant cells must be loaded. The route is still limited by the same pump budget and graph bounds; only this verified renewable intake supplies new water. It is not saved as a phantom tank and cannot receive reverse flow or other fluids. Full/incompatible destinations draw nothing. Single finite sources, flowing water, lava and waterlogged blocks are not extracted.
+
+Pipe visuals remain simple static geometry: branching flow does not yet create original connected arm/casing models. There is no pressure simulation, finite-fluid extraction, hose pulley, valve, pump-series propagation, multiblock tank merging or exact original fluid behavior. These code paths compile and pass conservation tests, but have not been exercised in a running game.

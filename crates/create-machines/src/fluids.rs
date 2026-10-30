@@ -6,7 +6,11 @@ pub type Pos = [i32; 3];
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Node {
     Pipe,
-    Port { single: bool },
+    /// A host-verified renewable water intake; never a writable destination.
+    SourceWater,
+    Port {
+        single: bool,
+    },
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Status {
@@ -51,7 +55,7 @@ fn scan(nodes: &BTreeMap<Pos, Node>, start: Pos) -> Result<Vec<Pos>, Status> {
             return Err(Status::TooLarge);
         }
         match nodes.get(&p) {
-            Some(Node::Port { .. }) => {
+            Some(Node::Port { .. } | Node::SourceWater) => {
                 ports.insert(p);
             }
             Some(Node::Pipe) => {
@@ -172,6 +176,15 @@ pub fn flow(
     let n = output.len();
     output.rotate_left((tick % n as u64) as usize);
     let mut live = states.clone();
+    for p in &input {
+        if nodes.get(p) == Some(&Node::SourceWater) {
+            let mut source = MachineState::default();
+            source
+                .fluid_out
+                .insert("minecraft:water".into(), TANK_CAPACITY);
+            live.insert(*p, source);
+        }
+    }
     let mut changed = BTreeSet::new();
     let budget = (rpm.abs().min(256.0) * 4.0).round().max(1.0) as u32;
     let mut left = budget;
@@ -179,6 +192,9 @@ pub fn flow(
         for (i, to) in output.iter().enumerate() {
             if left == 0 {
                 break;
+            }
+            if nodes.get(to) == Some(&Node::SourceWater) {
+                continue;
             }
             let share = left.div_ceil((output.len() - i) as u32);
             let (Some(source), Some(dest)) = (live.get(&from), live.get(to)) else {
@@ -198,7 +214,7 @@ pub fn flow(
     Flow {
         states: live
             .into_iter()
-            .filter(|(p, _)| changed.contains(p))
+            .filter(|(p, _)| changed.contains(p) && nodes.get(p) != Some(&Node::SourceWater))
             .collect(),
         amount,
         status: if amount == 0 {
@@ -332,5 +348,59 @@ mod bounds_tests {
         );
         nodes.insert([16, 0, 0], Node::Port { single: true });
         assert!(endpoints(&nodes, [0, 0, 0], Axis::X, 32.0).is_ok());
+    }
+}
+
+#[cfg(test)]
+mod source_tests {
+    use super::super::kinetics::Axis;
+    use super::*;
+    #[test]
+    fn renewable_source_obeys_pump_budget_without_persisting_a_fake_tank() {
+        let nodes = BTreeMap::from([
+            ([-1, 0, 0], Node::SourceWater),
+            ([1, 0, 0], Node::Pipe),
+            ([2, 0, 0], Node::Port { single: true }),
+        ]);
+        let states = BTreeMap::from([([2, 0, 0], MachineState::default())]);
+        let result = flow(&nodes, &states, [0, 0, 0], Axis::X, 32.0, 0);
+        assert_eq!(result.amount, 128);
+        assert_eq!(result.states.len(), 1);
+        assert_eq!(result.states[&[2, 0, 0]].fluid_in["minecraft:water"], 128);
+        assert!(!result.states.contains_key(&[-1, 0, 0]));
+    }
+    #[test]
+    fn reverse_flow_cannot_dump_stored_fluid_into_the_source() {
+        let nodes = BTreeMap::from([
+            ([-1, 0, 0], Node::SourceWater),
+            ([1, 0, 0], Node::Port { single: true }),
+        ]);
+        let mut tank = MachineState::default();
+        tank.insert_fluid("minecraft:water", 1000);
+        let states = BTreeMap::from([([1, 0, 0], tank)]);
+        let result = flow(&nodes, &states, [0, 0, 0], Axis::X, -32.0, 0);
+        assert_eq!(result.amount, 0);
+        assert!(result.states.is_empty());
+    }
+    #[test]
+    fn incompatible_or_full_tanks_never_draw_world_water() {
+        let nodes = BTreeMap::from([
+            ([-1, 0, 0], Node::SourceWater),
+            ([1, 0, 0], Node::Port { single: true }),
+        ]);
+        for (id, amount) in [("minecraft:lava", 1), ("minecraft:water", 8000)] {
+            let mut tank = MachineState::default();
+            tank.insert_fluid(id, amount);
+            let result = flow(
+                &nodes,
+                &BTreeMap::from([([1, 0, 0], tank)]),
+                [0, 0, 0],
+                Axis::X,
+                256.0,
+                0,
+            );
+            assert_eq!(result.amount, 0);
+            assert!(result.states.is_empty());
+        }
     }
 }

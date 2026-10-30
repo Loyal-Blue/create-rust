@@ -13725,7 +13725,11 @@ pub type Pos = [i32; 3];
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Node {
     Pipe,
-    Port { single: bool },
+    /// A host-verified renewable water intake; never a writable destination.
+    SourceWater,
+    Port {
+        single: bool,
+    },
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Status {
@@ -13770,7 +13774,7 @@ fn scan(nodes: &BTreeMap<Pos, Node>, start: Pos) -> Result<Vec<Pos>, Status> {
             return Err(Status::TooLarge);
         }
         match nodes.get(&p) {
-            Some(Node::Port { .. }) => {
+            Some(Node::Port { .. } | Node::SourceWater) => {
                 ports.insert(p);
             }
             Some(Node::Pipe) => {
@@ -13891,6 +13895,15 @@ pub fn flow(
     let n = output.len();
     output.rotate_left((tick % n as u64) as usize);
     let mut live = states.clone();
+    for p in &input {
+        if nodes.get(p) == Some(&Node::SourceWater) {
+            let mut source = MachineState::default();
+            source
+                .fluid_out
+                .insert("minecraft:water".into(), TANK_CAPACITY);
+            live.insert(*p, source);
+        }
+    }
     let mut changed = BTreeSet::new();
     let budget = (rpm.abs().min(256.0) * 4.0).round().max(1.0) as u32;
     let mut left = budget;
@@ -13898,6 +13911,9 @@ pub fn flow(
         for (i, to) in output.iter().enumerate() {
             if left == 0 {
                 break;
+            }
+            if nodes.get(to) == Some(&Node::SourceWater) {
+                continue;
             }
             let share = left.div_ceil((output.len() - i) as u32);
             let (Some(source), Some(dest)) = (live.get(&from), live.get(to)) else {
@@ -13917,7 +13933,7 @@ pub fn flow(
     Flow {
         states: live
             .into_iter()
-            .filter(|(p, _)| changed.contains(p))
+            .filter(|(p, _)| changed.contains(p) && nodes.get(p) != Some(&Node::SourceWater))
             .collect(),
         amount,
         status: if amount == 0 {
@@ -14051,6 +14067,60 @@ mod bounds_tests {
         );
         nodes.insert([16, 0, 0], Node::Port { single: true });
         assert!(endpoints(&nodes, [0, 0, 0], Axis::X, 32.0).is_ok());
+    }
+}
+
+#[cfg(test)]
+mod source_tests {
+    use super::super::kinetics::Axis;
+    use super::*;
+    #[test]
+    fn renewable_source_obeys_pump_budget_without_persisting_a_fake_tank() {
+        let nodes = BTreeMap::from([
+            ([-1, 0, 0], Node::SourceWater),
+            ([1, 0, 0], Node::Pipe),
+            ([2, 0, 0], Node::Port { single: true }),
+        ]);
+        let states = BTreeMap::from([([2, 0, 0], MachineState::default())]);
+        let result = flow(&nodes, &states, [0, 0, 0], Axis::X, 32.0, 0);
+        assert_eq!(result.amount, 128);
+        assert_eq!(result.states.len(), 1);
+        assert_eq!(result.states[&[2, 0, 0]].fluid_in["minecraft:water"], 128);
+        assert!(!result.states.contains_key(&[-1, 0, 0]));
+    }
+    #[test]
+    fn reverse_flow_cannot_dump_stored_fluid_into_the_source() {
+        let nodes = BTreeMap::from([
+            ([-1, 0, 0], Node::SourceWater),
+            ([1, 0, 0], Node::Port { single: true }),
+        ]);
+        let mut tank = MachineState::default();
+        tank.insert_fluid("minecraft:water", 1000);
+        let states = BTreeMap::from([([1, 0, 0], tank)]);
+        let result = flow(&nodes, &states, [0, 0, 0], Axis::X, -32.0, 0);
+        assert_eq!(result.amount, 0);
+        assert!(result.states.is_empty());
+    }
+    #[test]
+    fn incompatible_or_full_tanks_never_draw_world_water() {
+        let nodes = BTreeMap::from([
+            ([-1, 0, 0], Node::SourceWater),
+            ([1, 0, 0], Node::Port { single: true }),
+        ]);
+        for (id, amount) in [("minecraft:lava", 1), ("minecraft:water", 8000)] {
+            let mut tank = MachineState::default();
+            tank.insert_fluid(id, amount);
+            let result = flow(
+                &nodes,
+                &BTreeMap::from([([1, 0, 0], tank)]),
+                [0, 0, 0],
+                Axis::X,
+                256.0,
+                0,
+            );
+            assert_eq!(result.amount, 0);
+            assert!(result.states.is_empty());
+        }
     }
 }
 
@@ -16387,25 +16457,42 @@ fn move_item(game: &mut Game<'_>, from: MachinePos, to: MachinePos) {
     dirty_machine(game, from);
     dirty_machine(game, to);
 }
+fn water_source(game: &Game<'_>, p: [i32;3]) -> bool {
+    game.world.loaded(p[0],p[2]) && game.pack.assets.registry.state(game.world.block(p[0],p[1],p[2]))
+        .is_some_and(|s|s.name=="minecraft:water" && s.properties.get("level").is_some_and(|v|v=="0"))
+}
+fn renewable_water(game: &Game<'_>, p: [i32;3]) -> bool {
+    if !water_source(game,p) {return false;}
+    let neighbors=[[1,0,0],[-1,0,0],[0,0,1],[0,0,-1]];
+    let sources=neighbors.into_iter().filter(|d|water_source(game,[p[0]+d[0],p[1],p[2]+d[2]])).count();
+    let below=[p[0],p[1]-1,p[2]];
+    sources>=2 && (water_source(game,below) || game.res.facts().get(game.world.block(below[0],below[1],below[2])).full_collision)
+}
 fn fluid_topology(
+    game: &Game<'_>,
     positions: &[(MachinePos, String)],
 ) -> BTreeMap<[i32; 3], machines::fluids::Node> {
-    positions
-        .iter()
-        .filter_map(|(p, name)| {
-            let node = match name.as_str() {
-                "create:fluid_pipe" => machines::fluids::Node::Pipe,
-                "create:fluid_tank" => machines::fluids::Node::Port { single: true },
-                "create:basin"
-                | "create:spout"
-                | "create:item_drain"
-                | "create:mechanical_mixer" => machines::fluids::Node::Port { single: false },
-                _ => return None,
-            };
-            Some(([p.0, p.1, p.2], node))
-        })
-        .collect()
+    use machines::fluids::Node;
+    let mut nodes=BTreeMap::new();
+    for (p,name) in positions {
+        let node=match name.as_str() {
+            "create:fluid_pipe"=>Node::Pipe,
+            "create:fluid_tank"=>Node::Port{single:true},
+            "create:basin"|"create:spout"|"create:item_drain"|"create:mechanical_mixer"=>Node::Port{single:false},
+            _=>continue,
+        };
+        nodes.insert([p.0,p.1,p.2],node);
+    }
+    for (p,name) in positions {
+        if !matches!(name.as_str(),"create:fluid_pipe"|"create:mechanical_pump") {continue;}
+        for d in [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]] {
+            let q=[p.0+d[0],p.1+d[1],p.2+d[2]];
+            if renewable_water(game,q) {nodes.insert(q,Node::SourceWater);}
+        }
+    }
+    nodes
 }
+
 fn pump_fluids(
     game: &mut Game<'_>,
     p: MachinePos,
@@ -16620,7 +16707,7 @@ pub(super) fn tick_machines(game: &mut Game<'_>) {
         }
         store_machine(game, *p, s);
     }
-    let fluid_nodes = fluid_topology(&positions);
+    let fluid_nodes = fluid_topology(game,&positions);
     let surface_run = tick_surface_machines(game, &positions, &solved.speeds);
     for (p, name) in &positions {
         let mut rpm = solved.speeds.get(&[p.0, p.1, p.2]).copied().unwrap_or(0.0);
@@ -18581,4 +18668,13 @@ fn tick_tree_saw(game: &mut Game<'_>, p: MachinePos, rpm: f32) {
         }
     }
     store_machine(game,p,state);
+}
+
+// Authored XP-nugget behavior; remote use remains a server integration gap.
+pub(super) fn use_create_item(game: &mut Game<'_>) -> bool {
+    if game.remote.is_some() || !game.may_build() {return false;}
+    if !game.held().is_some_and(|s| &*s.item=="create:experience_nugget" && s.count>0) {return false;}
+    game.consume_held();
+    game.experience.give(3);
+    true
 }

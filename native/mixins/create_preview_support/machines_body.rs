@@ -527,25 +527,42 @@ fn move_item(game: &mut Game<'_>, from: MachinePos, to: MachinePos) {
     dirty_machine(game, from);
     dirty_machine(game, to);
 }
+fn water_source(game: &Game<'_>, p: [i32;3]) -> bool {
+    game.world.loaded(p[0],p[2]) && game.pack.assets.registry.state(game.world.block(p[0],p[1],p[2]))
+        .is_some_and(|s|s.name=="minecraft:water" && s.properties.get("level").is_some_and(|v|v=="0"))
+}
+fn renewable_water(game: &Game<'_>, p: [i32;3]) -> bool {
+    if !water_source(game,p) {return false;}
+    let neighbors=[[1,0,0],[-1,0,0],[0,0,1],[0,0,-1]];
+    let sources=neighbors.into_iter().filter(|d|water_source(game,[p[0]+d[0],p[1],p[2]+d[2]])).count();
+    let below=[p[0],p[1]-1,p[2]];
+    sources>=2 && (water_source(game,below) || game.res.facts().get(game.world.block(below[0],below[1],below[2])).full_collision)
+}
 fn fluid_topology(
+    game: &Game<'_>,
     positions: &[(MachinePos, String)],
 ) -> BTreeMap<[i32; 3], machines::fluids::Node> {
-    positions
-        .iter()
-        .filter_map(|(p, name)| {
-            let node = match name.as_str() {
-                "create:fluid_pipe" => machines::fluids::Node::Pipe,
-                "create:fluid_tank" => machines::fluids::Node::Port { single: true },
-                "create:basin"
-                | "create:spout"
-                | "create:item_drain"
-                | "create:mechanical_mixer" => machines::fluids::Node::Port { single: false },
-                _ => return None,
-            };
-            Some(([p.0, p.1, p.2], node))
-        })
-        .collect()
+    use machines::fluids::Node;
+    let mut nodes=BTreeMap::new();
+    for (p,name) in positions {
+        let node=match name.as_str() {
+            "create:fluid_pipe"=>Node::Pipe,
+            "create:fluid_tank"=>Node::Port{single:true},
+            "create:basin"|"create:spout"|"create:item_drain"|"create:mechanical_mixer"=>Node::Port{single:false},
+            _=>continue,
+        };
+        nodes.insert([p.0,p.1,p.2],node);
+    }
+    for (p,name) in positions {
+        if !matches!(name.as_str(),"create:fluid_pipe"|"create:mechanical_pump") {continue;}
+        for d in [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]] {
+            let q=[p.0+d[0],p.1+d[1],p.2+d[2]];
+            if renewable_water(game,q) {nodes.insert(q,Node::SourceWater);}
+        }
+    }
+    nodes
 }
+
 fn pump_fluids(
     game: &mut Game<'_>,
     p: MachinePos,
@@ -760,7 +777,7 @@ pub(super) fn tick_machines(game: &mut Game<'_>) {
         }
         store_machine(game, *p, s);
     }
-    let fluid_nodes = fluid_topology(&positions);
+    let fluid_nodes = fluid_topology(game,&positions);
     let surface_run = tick_surface_machines(game, &positions, &solved.speeds);
     for (p, name) in &positions {
         let mut rpm = solved.speeds.get(&[p.0, p.1, p.2]).copied().unwrap_or(0.0);

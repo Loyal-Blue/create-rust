@@ -1012,3 +1012,12 @@ fn tick_tree_saw(game: &mut Game<'_>, p: MachinePos, rpm: f32) {
     }
     store_machine(game,p,state);
 }
+
+// Authored XP-nugget behavior; remote use remains a server integration gap.
+pub(super) fn use_create_item(game: &mut Game<'_>) -> bool {
+    if game.remote.is_some() || !game.may_build() {return false;}
+    if !game.held().is_some_and(|s| &*s.item=="create:experience_nugget" && s.count>0) {return false;}
+    game.consume_held();
+    game.experience.give(3);
+    true
+}

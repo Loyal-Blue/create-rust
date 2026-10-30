@@ -1,7 +1,7 @@
 id = "create"
 name = "Create: Horizon Content Preview"
-version = "0.7.1"
-description = "Registry and local assets for the experimental Create machinery runtime. Requires Create Preview Support 0.6.0 for processing, rotation and inventory pages."
+version = "0.8.0"
+description = "Registry and local assets for the experimental Create machinery runtime. Requires Create Preview Support 0.7.0 for processing, rotation and inventory pages."
 authors = ["Original assets: The Create Team", "Horizon format adaptation: Codex"]
 api = "0.2"
 side = "both"
