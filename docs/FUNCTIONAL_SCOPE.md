@@ -1,4 +1,4 @@
-# Functional scope: native 0.4.0
+# Functional scope: native 0.5.0
 
 These are implemented code paths, not claims of in-game validation or exact Java parity.
 
@@ -10,18 +10,18 @@ These are implemented code paths, not claims of in-game validation or exact Java
 | Gearbox, encased chain drive | In-plane drive transmission | Original chain range rules and casing interactions |
 | Clutch, gearshift | Manual and redstone disengage/reversal | Original GUIs/animated internals |
 | All drive networks | Stress capacity/load, source conflicts, stalled RPM | Exact original stress configuration; unloaded network parity |
-| Mechanical press | Pressing; compacting over basin; depot/basin 1–2 below | Moving press head and physical transported items |
-| Mechanical mixer | Mixing at supported RPM/heat in basin below | Moving whisk and original minimum-speed rules |
-| Millstone, crushing wheel | Container milling/crushing recipes | Opposed wheel pair and world-item crushing |
+| Mechanical press | Bulk depot/belt pressing; compacting over basin; moving head/shaft | Moving collision, sounds/particles and exact original timing |
+| Mechanical mixer | Mixing at supported RPM/heat in basin below; moving whisk/pole/gear | Exact whisk stroke/collision, original speed/timing rules |
+| Millstone, crushing wheel | Container milling/crushing; inward horizontal wheel pairs crush loose stacks in bulk | Full original crushing-controller structure and collision |
 | Mechanical saw | Container cutting recipes | Tree felling and world saw damage |
 | Mechanical drill | Breaks a breakable non-Create block ahead with ordinary drops | Original hardness timing, machine mining, moving contraption use |
-| Encased fan | Own-inventory splashing/blasting/smoking/haunting selected by adjacent water/lava/fire/soul fire | Air streams, entity pushing and dropped-item processing |
+| Encased fan | Inventory, depot and loose-stack processing; bounded item airflow through appropriate media | Parallel exposure tracking, players/mobs and original fan visuals |
 | Deployer | Container deploying recipes; retained catalysts preserve damage/components | Player-like block/entity interactions and world arm animation |
-| Basin, depot | Persistent 27-slot storage; external processing when machine input row is empty | Original single-item rendering, basin geometry/fluid display |
+| Basin, depot | Persistent 27-slot storage; visible depot stack, dropped-item capture and direct depot interactions | Exact original depot capacity, basin geometry/fluid display |
 | Blaze burner | Coal/charcoal/blaze-rod heat; blaze-cake superheat | Capturing blazes, original heat transitions and visuals |
-| Fluid tank | Persistent fluid input/output stores, 8,000 mB capacity each | Multiblock merging, original visuals and capacity rules |
-| Fluid pipe, mechanical pump | Signed RPM moves fluids through straight runs up to 16 pipes | Branches, valves, water-source extraction, original pump drive topology |
-| Spout, item drain | Filling/emptying recipes without kinetic power; spout can target depot below | World item transport and original fluid rendering |
+| Fluid tank | Single-fluid 8,000 mB total for new tank fills; legacy contents retained | Multiblock merging, original visuals and capacity rules |
+| Fluid pipe, mechanical pump | Signed RPM routes across loaded branches, 16 steps/256 nodes, one shared budget | Original arm geometry, pressure, valves, water-source extraction, pump-series propagation |
+| Spout, item drain | Spout inventory/depot/belt filling, proper water bottles, five generic bucket types; inventory draining | Loose-item draining, arbitrary potion conversion and original fluid rendering |
 | Flat belt | Real dropped-item movement; straight shaft coupling; reversal/stalls; connector placement | Slopes, junctions, covers, entity transport and belt-surface animation |
 | Andesite/brass funnel | Import/export, redstone pause, amounts, brass item-ID filter, machine slot rules | Smart filter lists, NBT matching, full original model states and side rules |
 | Chute | One-item vertical transfers per tick; component-safe snapshots | Original falling-item behavior, smart chutes and filters |
@@ -32,6 +32,6 @@ These are implemented code paths, not claims of in-game validation or exact Java
 | Creative inventory | 76 entries on page 2 with search | Running-game layout/input verification |
 | Persistence/network | Chunk metadata for machines; ordinary block-entity item storage; server snapshots | Real save/rejoin/multiplayer verification |
 
-Recipe simulation includes 338 entries. The adapter only considers recipes whose item outputs exist in the host registry, so uninstalled decorative outputs cannot consume inputs or block supported recipes. The tag matcher, work durations, chances and machine inventories are prototype rules rather than exact Create behavior. Content crafting/smelting uses the engine data pack path.
+Recipe simulation includes 349 active entries (338 imported recipes plus 11 authored generic container operations). The adapter only considers recipes whose item outputs exist in the host registry, so uninstalled decorative outputs cannot consume inputs or block supported recipes. The tag matcher, work durations, chances and machine inventories are prototype rules rather than exact Create behavior. Content crafting/smelting uses the engine data pack path.
 
 Sloped/branched belts, tunnels, mechanical crafters, sequenced assembly world machines, schematics, moving contraptions, bearings, pistons, elevators, trains and most of Create's decorative/content catalogue are not implemented. They require substantial further work.

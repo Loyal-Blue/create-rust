@@ -10,7 +10,8 @@ pub const INPUT: std::ops::Range<usize> = 0..9;
 pub const OUTPUT: std::ops::Range<usize> = 9..18;
 
 /// Components are canonical, opaque host SNBT. Unknown components survive moves.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Stack {
     pub id: String,
     pub count: u32,
@@ -40,6 +41,7 @@ pub struct MachineState {
     pub extracting: bool,
     pub item_filter: Option<String>,
     pub transfer_limit: u32,
+    pub world_target: Option<surface::Binding>,
 }
 impl Default for MachineState {
     fn default() -> Self {
@@ -65,6 +67,7 @@ impl Default for MachineState {
             extracting: false,
             item_filter: None,
             transfer_limit: 1,
+            world_target: None,
         }
     }
 }
@@ -140,18 +143,21 @@ impl MachineState {
     }
     /// Output has priority, then the input tank. Extraction is all-or-nothing.
     pub fn extract_fluid(&mut self, id: &str, amount: u32) -> bool {
-        if amount == 0 {
+        let available = u64::from(self.fluid_in.get(id).copied().unwrap_or(0))
+            + u64::from(self.fluid_out.get(id).copied().unwrap_or(0));
+        if amount == 0 || available < u64::from(amount) {
             return false;
         }
+        let mut left = amount;
         for tank in [&mut self.fluid_out, &mut self.fluid_in] {
-            if tank.get(id).copied().unwrap_or(0) >= amount {
-                let n = tank.get_mut(id).unwrap();
-                *n -= amount;
-                tank.retain(|_, n| *n > 0);
-                return true;
+            if let Some(count) = tank.get_mut(id) {
+                let take = left.min(*count);
+                *count -= take;
+                left -= take;
             }
+            tank.retain(|_, n| *n > 0);
         }
-        false
+        true
     }
 }
 fn tank_total(tank: &BTreeMap<String, u32>) -> u64 {
@@ -231,6 +237,13 @@ pub struct Update {
     pub inventory: InventoryPlan,
     pub result: TickResult,
 }
+fn product_components(recipe: &create_simulation::Recipe, id: &str) -> String {
+    if recipe.id == "create:filling/water_bottle" && id == "minecraft:potion" {
+        r#"{"minecraft:potion_contents":{potion:"minecraft:water"}}"#.into()
+    } else {
+        String::new()
+    }
+}
 /// Reserve real output space before consuming inputs or committing random state.
 /// Exact Java durations, durability-based tools and component recipes remain unsupported.
 pub fn process(
@@ -247,7 +260,7 @@ pub fn process(
         station,
         rpm,
         heat,
-        create_simulation::catalog::recipes(),
+        create_simulation::active_recipes(),
         limit,
     )
 }
@@ -305,7 +318,7 @@ pub fn process_with_catalog(
                     &Stack {
                         id: p.id.into(),
                         count: p.count,
-                        components: String::new(),
+                        components: product_components(recipe, p.id),
                     },
                     &limit,
                 )
@@ -321,7 +334,7 @@ pub fn process_with_catalog(
                     &Stack {
                         id: id.clone(),
                         count: *count,
-                        components: String::new(),
+                        components: product_components(recipe, id),
                     },
                     &limit,
                 ) {
@@ -463,6 +476,8 @@ pub fn container_size(block: &str) -> Option<usize> {
 #[cfg(test)]
 mod tests;
 
+pub mod fluids;
+pub mod surface;
 pub mod transport;
 pub mod worldgen;
 

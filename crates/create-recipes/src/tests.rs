@@ -1,6 +1,6 @@
 use super::*;
 fn recipe(id: &str) -> &'static Recipe {
-    catalog::recipes().iter().find(|r| r.id == id).unwrap()
+    active_recipes().iter().find(|r| r.id == id).unwrap()
 }
 fn finish(m: &mut Machine, rpm: f32) -> TickResult {
     for _ in 0..10000 {
@@ -187,7 +187,7 @@ fn retained_tools_are_reserved_and_returned_after_a_craft() {
 }
 #[test]
 fn every_imported_recipe_can_complete_with_valid_inputs() {
-    for r in catalog::recipes() {
+    for r in active_recipes() {
         let mut m = Machine::new(r.station);
         m.heat = Heat::Superheated;
         for i in r.ingredients {

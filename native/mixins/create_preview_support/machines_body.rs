@@ -265,7 +265,7 @@ fn restore(
                 } else if s.components.is_empty() {
                     Some(Some(ItemStack::new(&s.id, s.count)))
                 } else {
-                    None
+                    decode_portable_item(s).map(Some)
                 }
             }
         })
@@ -391,21 +391,30 @@ fn process_with_fluid_owner(
     let mut state = read_machine(game, owner);
     state.set_speed(rpm, game.world.game_time.max(0) as u64);
     let input = portable(&before);
-    let catalog: Vec<_> = recipes::catalog::recipes()
+    let catalog: Vec<_> = recipes::active_recipes()
         .iter()
         .filter(|r| {
             (r.station == station || (station == "compacting" && r.station == "pressing"))
                 && r.products
                     .iter()
-                    .all(|p| p.fluid || game.res.items().get(p.id).is_some())
+                    .all(|p| p.fluid || game.items().get(p.id).is_some())
         })
         .copied()
         .collect();
-    let Ok(mut update) =
-        machines::process_with_catalog(&state, &input, station, rpm, heat, &catalog, |id| {
-            game.res.items().get(id).map_or(1, |i| i.max_stack)
+    let result = if machine_name(game, p) == "create:depot"
+        && matches!(
+            station,
+            "pressing" | "splashing" | "blasting" | "smoking" | "haunting"
+        ) {
+        machines::surface::work_inventory(&state, &input, station, rpm, heat, &catalog, |id| {
+            game.items().get(id).map_or(1, |i| i.max_stack)
         })
-    else {
+    } else {
+        machines::process_with_catalog(&state, &input, station, rpm, heat, &catalog, |id| {
+            game.items().get(id).map_or(1, |i| i.max_stack)
+        })
+    };
+    let Ok(mut update) = result else {
         return None;
     };
     if update.result == machines::TickResult::NoPower
@@ -418,7 +427,7 @@ fn process_with_fluid_owner(
         .after
         .iter()
         .flatten()
-        .any(|s| game.res.items().get(&s.id).is_none())
+        .any(|s| game.items().get(&s.id).is_none())
     {
         return None;
     }
@@ -483,7 +492,7 @@ fn move_item(game: &mut Game<'_>, from: MachinePos, to: MachinePos) {
     let aa = portable(&a[ar.clone()]);
     let bb = portable(&b[br.clone()]);
     let Some((ap, bp)) = machines::transfer(&aa, &bb, 1, |id| {
-        game.res.items().get(id).map_or(1, |i| i.max_stack)
+        game.items().get(id).map_or(1, |i| i.max_stack)
     }) else {
         return;
     };
@@ -517,44 +526,52 @@ fn move_item(game: &mut Game<'_>, from: MachinePos, to: MachinePos) {
     dirty_machine(game, from);
     dirty_machine(game, to);
 }
-fn pump_fluids(game: &mut Game<'_>, p: MachinePos, axis: transmission::Axis, rpm: f32) {
-    if rpm == 0.0 {
-        return;
-    }
-    let mut step = [0; 3];
-    step[axis.index()] = if rpm > 0.0 { 1 } else { -1 };
-    let endpoints = |game: &Game<'_>, sign: i32| {
-        let mut out = vec![];
-        for n in 1..=16 {
-            let q = (
-                p.0 + step[0] * n * sign,
-                p.1 + step[1] * n * sign,
-                p.2 + step[2] * n * sign,
-            );
-            let name = machine_name(game, q);
-            if name == "create:fluid_pipe" {
-                continue;
-            }
-            if machines::container_size(&name).is_some() {
-                out.push(q)
-            }
-            break;
+fn fluid_topology(
+    positions: &[(MachinePos, String)],
+) -> BTreeMap<[i32; 3], machines::fluids::Node> {
+    positions
+        .iter()
+        .filter_map(|(p, name)| {
+            let node = match name.as_str() {
+                "create:fluid_pipe" => machines::fluids::Node::Pipe,
+                "create:fluid_tank" => machines::fluids::Node::Port { single: true },
+                "create:basin"
+                | "create:spout"
+                | "create:item_drain"
+                | "create:mechanical_mixer" => machines::fluids::Node::Port { single: false },
+                _ => return None,
+            };
+            Some(([p.0, p.1, p.2], node))
+        })
+        .collect()
+}
+fn pump_fluids(
+    game: &mut Game<'_>,
+    p: MachinePos,
+    axis: transmission::Axis,
+    rpm: f32,
+    nodes: &BTreeMap<[i32; 3], machines::fluids::Node>,
+) {
+    let mut states = BTreeMap::new();
+    if let Ok((input, output)) = machines::fluids::endpoints(nodes, [p.0, p.1, p.2], axis, rpm) {
+        for q in input.into_iter().chain(output) {
+            states.insert(q, read_machine(game, (q[0], q[1], q[2])));
         }
-        out
-    };
-    let a = endpoints(game, -1);
-    let b = endpoints(game, 1);
-    let (Some(&from), Some(&to)) = (a.first(), b.first()) else {
-        return;
-    };
-    let sa = read_machine(game, from);
-    let sb = read_machine(game, to);
-    if let Some((sa, sb, _)) =
-        machines::transfer_fluid(&sa, &sb, (rpm.abs() * 4.0).round().max(1.0) as u32)
-    {
-        store_machine(game, from, sa);
-        store_machine(game, to, sb);
     }
+    let flow = machines::fluids::flow(
+        nodes,
+        &states,
+        [p.0, p.1, p.2],
+        axis,
+        rpm,
+        game.world.game_time.max(0) as u64,
+    );
+    for (q, state) in flow.states {
+        store_machine(game, (q[0], q[1], q[2]), state);
+    }
+    let mut state = read_machine(game, p);
+    state.status = format!("{:?}: {} mB/t", flow.status, flow.amount);
+    store_machine(game, p, state);
 }
 fn broadcast_machine_state(game: &Game<'_>, values: &[MachineRecord], notice: &str) {
     if let Some(lan) = &game.lan {
@@ -584,6 +601,9 @@ pub(super) fn receive_machines(
     game: &mut Game<'_>,
     packet: &horizon_protocol::packets::play::Clientbound,
 ) -> bool {
+    if receive_depot_visuals(game, packet) {
+        return true;
+    }
     let horizon_protocol::packets::play::Clientbound::CustomPayload(payload) = packet else {
         return false;
     };
@@ -655,6 +675,7 @@ pub(super) fn tick_machines(game: &mut Game<'_>) {
     for &(p, _) in &positions {
         ensure_machine(game, p);
     }
+    tick_depots(game, &positions);
     let mut nodes = BTreeMap::new();
     for (p, name) in &positions {
         let Some(state) = game
@@ -738,6 +759,8 @@ pub(super) fn tick_machines(game: &mut Game<'_>) {
         }
         store_machine(game, *p, s);
     }
+    let fluid_nodes = fluid_topology(&positions);
+    let surface_run = tick_surface_machines(game, &positions, &solved.speeds);
     for (p, name) in &positions {
         let mut rpm = solved.speeds.get(&[p.0, p.1, p.2]).copied().unwrap_or(0.0);
         if matches!(name.as_str(), "create:spout" | "create:item_drain") {
@@ -745,7 +768,9 @@ pub(super) fn tick_machines(game: &mut Game<'_>) {
         }
         let below = (p.0, p.1 - 1, p.2);
         let mut target = *p;
-        if let Some(mut station) = machines::station(name) {
+        if let Some(mut station) =
+            machines::station(name).filter(|_| !surface_run.handled.contains(p))
+        {
             if name == "create:encased_fan" {
                 let face = game
                     .pack
@@ -874,7 +899,7 @@ pub(super) fn tick_machines(game: &mut Game<'_>) {
         }
         if name == "create:mechanical_pump" {
             if let Some(n) = nodes.get(&[p.0, p.1, p.2]) {
-                pump_fluids(game, *p, n.axis, rpm)
+                pump_fluids(game, *p, n.axis, rpm, &fluid_nodes)
             }
         }
         if name == "create:chute" {
@@ -882,7 +907,8 @@ pub(super) fn tick_machines(game: &mut Game<'_>) {
             move_item(game, *p, below);
         }
     }
-    tick_transport(game, &positions, &solved.speeds);
+    tick_transport(game, &positions, &solved.speeds, &surface_run.held);
+    send_depot_visuals(game, &positions, false);
     thread_local! { static SENT: std::cell::RefCell<BTreeMap<(std::path::PathBuf,String),BTreeMap<MachinePos,String>>>=const { std::cell::RefCell::new(BTreeMap::new()) }; }
     let values: Vec<_> = positions
         .iter()
@@ -940,6 +966,9 @@ pub(super) fn use_machine(game: &mut Game<'_>, p: [i32; 3]) -> Result<bool> {
     let held = game.held().cloned();
     let sneaking = game.keys.contains(&winit::keyboard::KeyCode::ShiftLeft);
     if held.as_ref().is_some_and(|s| &*s.item == "create:wrench") {
+        return Ok(false);
+    }
+    if sneaking && held.is_some() {
         return Ok(false);
     }
     let mut state = read_machine(game, pos);
@@ -1007,8 +1036,11 @@ pub(super) fn use_machine(game: &mut Game<'_>, p: [i32; 3]) -> Result<bool> {
                 "minecraft:milk_bucket" => Some(("minecraft:milk", "minecraft:bucket")),
                 _ => None,
             };
+            let attempted = pair.is_some() || &*held.item == "minecraft:bucket";
             let remainder = if let Some((fluid, remainder)) = pair {
-                state.insert_fluid(fluid, 1000).then_some(remainder)
+                (machines::fluids::can_accept(&state, fluid, 1000, name == "create:fluid_tank")
+                    && state.insert_fluid(fluid, 1000))
+                .then_some(remainder)
             } else if &*held.item == "minecraft:bucket" {
                 [
                     ("minecraft:water", "minecraft:water_bucket"),
@@ -1022,11 +1054,21 @@ pub(super) fn use_machine(game: &mut Game<'_>, p: [i32; 3]) -> Result<bool> {
             } else {
                 None
             };
+            if attempted && remainder.is_none() {
+                transport_notice(
+                    game,
+                    pos,
+                    "Fluid store is full, incompatible, or has less than one bucket available",
+                );
+                return Ok(true);
+            }
             if let Some(remainder) = remainder {
                 if !game.creative {
                     game.consume_held();
+                }
+                if !game.creative || &*held.item == "minecraft:bucket" {
                     if let Some(left) = game.give(ItemStack::new(remainder, 1)) {
-                        game.player_drop(left)
+                        game.player_drop(left);
                     }
                 }
                 changed = true;
@@ -1103,7 +1145,7 @@ pub(super) fn draw_machine_status(game: &mut Game<'_>, batch: &mut HudBatch) {
     let percent = s
         .recipe
         .as_deref()
-        .and_then(|id| recipes::catalog::recipes().iter().find(|r| r.id == id))
+        .and_then(|id| recipes::active_recipes().iter().find(|r| r.id == id))
         .map_or(0.0, |r| {
             (s.progress / r.work.max(1) as f32 * 100.0).clamp(0.0, 100.0)
         });

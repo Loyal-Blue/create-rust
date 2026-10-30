@@ -135,3 +135,128 @@ fn funnel_world_stack_and_machine_pipeline_preserves_items() {
         portable(&original)[0].as_ref().unwrap().components
     );
 }
+
+#[test]
+fn bulk_surface_processing_uses_real_named_host_stacks() {
+    let mut iron = named_iron();
+    iron.count = 64;
+    let input = portable(&[Some(iron.clone())])[0].clone().unwrap();
+    let mut state = machines::MachineState::default();
+    for _ in 0..50 {
+        let u = machines::surface::work(
+            &state,
+            99,
+            &input,
+            "pressing",
+            16.0,
+            machines::Heat::None,
+            recipes::active_recipes(),
+            |_| 64,
+        )
+        .unwrap();
+        state = machines::MachineState::decode(&u.state.encode()).unwrap();
+        if u.result == machines::TickResult::Completed {
+            assert!(u.remaining.is_none());
+            let output = restore(&[Some(u.outputs[0].clone())], &[Some(iron)]).unwrap()[0]
+                .clone()
+                .unwrap();
+            assert_eq!(&*output.item, "create:iron_sheet");
+            assert_eq!(output.count, 64);
+            return;
+        }
+    }
+    panic!("world stack did not process");
+}
+#[test]
+fn depot_display_codec_preserves_components_without_registering_items() {
+    let iron = named_iron();
+    let data = portable(&[Some(iron.clone())])[0].clone().unwrap();
+    let encoded = serde_json::to_string(&data).unwrap();
+    let decoded: machines::Stack = serde_json::from_str(&encoded).unwrap();
+    assert_eq!(decode_portable_item(&decoded), Some(iron));
+    let mut invalid = data.clone();
+    invalid.count = 0;
+    assert!(decode_portable_item(&invalid).is_none());
+    invalid = data;
+    invalid.components = "{".into();
+    assert!(decode_portable_item(&invalid).is_none());
+}
+
+#[test]
+fn water_filling_creates_a_real_water_bottle_with_correct_contents() {
+    let input = ItemStack::new("minecraft:glass_bottle", 1);
+    let stack = portable(&[Some(input.clone())])[0].clone().unwrap();
+    let mut state = machines::MachineState::default();
+    assert!(state.insert_fluid("minecraft:water", 250));
+    for _ in 0..30 {
+        let u = machines::surface::work(
+            &state,
+            8,
+            &stack,
+            "filling",
+            32.0,
+            machines::Heat::None,
+            recipes::active_recipes(),
+            |id| if id == "minecraft:potion" { 1 } else { 64 },
+        )
+        .unwrap();
+        state = u.state;
+        if u.result == machines::TickResult::Completed {
+            let output = restore(&[Some(u.outputs[0].clone())], &[Some(input)]).unwrap()[0]
+                .clone()
+                .unwrap();
+            assert_eq!(&*output.item, "minecraft:potion");
+            assert_eq!(
+                output.data().and_then(|d| d.potion.as_deref()),
+                Some("minecraft:water")
+            );
+            assert!(state.fluid_in.is_empty());
+            return;
+        }
+    }
+    panic!("water bottle did not fill");
+}
+#[test]
+fn generic_bucket_filling_and_emptying_conserve_a_bucket_of_water() {
+    let mut state = machines::MachineState::default();
+    assert!(state.insert_fluid("minecraft:water", 1000));
+    let mut slots = vec![None; 27];
+    slots[0] = Some(ItemStack::new("minecraft:bucket", 1));
+    for _ in 0..30 {
+        let u = machines::process(
+            &state,
+            &portable(&slots),
+            "filling",
+            32.0,
+            machines::Heat::None,
+            |_| 64,
+        )
+        .unwrap();
+        state = u.state;
+        slots = restore(&u.inventory.after, &slots).unwrap();
+        if u.result == machines::TickResult::Completed {
+            break;
+        }
+    }
+    assert!(state.fluid_in.is_empty());
+    assert_eq!(&*slots[9].as_ref().unwrap().item, "minecraft:water_bucket");
+    slots[0] = slots[9].take();
+    for _ in 0..30 {
+        let u = machines::process(
+            &state,
+            &portable(&slots),
+            "emptying",
+            32.0,
+            machines::Heat::None,
+            |_| 64,
+        )
+        .unwrap();
+        state = u.state;
+        slots = restore(&u.inventory.after, &slots).unwrap();
+        if u.result == machines::TickResult::Completed {
+            break;
+        }
+    }
+    assert_eq!(state.fluid_out["minecraft:water"], 1000);
+    assert_eq!(&*slots[9].as_ref().unwrap().item, "minecraft:bucket");
+}

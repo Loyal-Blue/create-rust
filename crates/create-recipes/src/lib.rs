@@ -119,6 +119,17 @@ fn matches(matcher: &str, id: &str) -> bool {
     }
 }
 
+/// Select a recipe without consuming stock or advancing its random stream.
+pub fn matching_recipe<'a>(
+    stock: &Stock,
+    station: &str,
+    recipes: &'a [Recipe],
+) -> Option<&'a Recipe> {
+    recipes
+        .iter()
+        .find(|r| r.station == station && reserve(stock, r).is_some())
+}
+
 /// Finds an allocation without consuming anything in the live inventory.
 /// Backtracking handles overlapping tags and repeated ingredient slots.
 fn reserve(stock: &Stock, recipe: &Recipe) -> Option<Stock> {
@@ -231,7 +242,7 @@ impl Machine {
         }
     }
     pub fn tick(&mut self, rpm: f32) -> TickResult {
-        self.tick_with(rpm, catalog::recipes())
+        self.tick_with(rpm, active_recipes())
     }
     pub fn tick_with(&mut self, rpm: f32, recipes: &[Recipe]) -> TickResult {
         if !rpm.is_finite() || rpm == 0.0 {
@@ -321,7 +332,7 @@ impl Machine {
         let ["CHLAB1", station, progress, heat, rng] = header.as_slice() else {
             return Err("Unsupported laboratory save".into());
         };
-        if !catalog::recipes().iter().any(|r| r.station == *station) {
+        if !active_recipes().iter().any(|r| r.station == *station) {
             return Err("Unknown station".into());
         }
         let mut m = Self::new(station);
@@ -341,7 +352,7 @@ impl Machine {
             match f.as_slice() {
                 ["recipe", id]
                     if m.selected.is_none()
-                        && catalog::recipes()
+                        && active_recipes()
                             .iter()
                             .any(|r| r.id == *id && r.station == *station) =>
                 {
@@ -370,3 +381,17 @@ impl Machine {
 
 #[cfg(test)]
 mod tests;
+
+mod containers;
+/// Imported Create recipes plus authored generic fluid-container handlers.
+pub fn active_recipes() -> &'static [Recipe] {
+    static ALL: std::sync::OnceLock<Vec<Recipe>> = std::sync::OnceLock::new();
+    ALL.get_or_init(|| {
+        catalog::recipes()
+            .iter()
+            .chain(containers::recipes())
+            .copied()
+            .collect()
+    })
+    .as_slice()
+}

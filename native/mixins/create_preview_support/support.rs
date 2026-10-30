@@ -22,7 +22,7 @@ struct TabItem { id: String, name: String }
 
 fn validate(config: &Config) -> crate::Result<()> {
     if config.schema != 1 || config.blocks.len() < 34 || config.blocks.len() > 4096 || config.items.is_empty() || config.items.len() > 4096 || config.blocks.get("create:creative_motor").is_none_or(|v| !v.contains_key("north")) {
-        return Err("Create support needs the matching 0.6.x content preview".into());
+        return Err("Create support needs the matching 0.7.x content preview".into());
     }
     for variants in config.blocks.values() {
         for boxes in variants.values() {
@@ -157,7 +157,7 @@ fn replace(root: &Path, relative: &str, bytes: &[u8]) -> crate::Result<()> {
 
 pub(super) fn apply(root: &Path) -> crate::Result<()> {
     let path = root.join("data/create/create_preview/support.json");
-    if !path.exists() { return Err("Install Create content preview 0.6.x alongside Create Preview Support".into()); }
+    if !path.exists() { return Err("Install Create content preview 0.7.x alongside Create Preview Support".into()); }
     let config: Config = serde_json::from_slice(&fs::read(path)?)?;
     validate(&config)?;
     let mut changed = BTreeMap::new();
@@ -190,6 +190,12 @@ pub(super) fn apply(root: &Path) -> crate::Result<()> {
             for variant in variants.values_mut() {variant["model"]=json!("create:block/horizon_dynamic_empty");}
         }
         replace(root,&relative,&serde_json::to_vec(&states)?)?;
+    }
+    // Preserve full static models in the content pack; replace only the native
+    // cache's terrain assemblies with bodies before drawing moving partials.
+    for (machine,body) in [("mechanical_press","press_body"),("mechanical_mixer","mixer_body")] {
+        let bytes=fs::read(root.join(format!("assets/create/models/block/horizon_parts/{body}.json")))?;
+        replace(root,&format!("assets/create/models/block/horizon_runtime/{machine}.json"),&bytes)?;
     }
     let mut tabs: Value = serde_json::from_slice(&fs::read(root.join("creative-inventory.json"))?)?;
     creative(&mut tabs,&config)?;

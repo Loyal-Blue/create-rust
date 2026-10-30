@@ -280,6 +280,7 @@ fn funnel_import(
     p: MachinePos,
     facing: BeltFacing,
     state: &machines::MachineState,
+    held: &BTreeSet<u32>,
 ) {
     let step = facing.step();
     let container = offset_machine(p, step, -1);
@@ -297,7 +298,8 @@ fn funnel_import(
     }
     for i in 0..game.dropped.len() {
         let item = &game.dropped[i];
-        if item.target.is_some()
+        if held.contains(&item.id)
+            || item.target.is_some()
             || !transport::at_mouth(
                 facing,
                 [
@@ -351,6 +353,7 @@ fn tick_transport(
     game: &mut Game<'_>,
     positions: &[(MachinePos, String)],
     speeds: &std::collections::HashMap<[i32; 3], f32>,
+    held: &BTreeSet<u32>,
 ) {
     let mut belts = BTreeMap::new();
     for (p, name) in positions {
@@ -383,12 +386,18 @@ fn tick_transport(
                 if state.extracting {
                     funnel_export(game, *p, facing, &state);
                 } else {
-                    funnel_import(game, *p, facing, &state);
+                    funnel_import(game, *p, facing, &state, held);
                 }
             }
         }
     }
     for item in &mut game.dropped {
+        if held.contains(&item.id) {
+            if item.target.is_none() { item.age = 0; }
+            item.velocity.x = 0.0;
+            item.velocity.z = 0.0;
+            continue;
+        }
         let p = (
             item.position.x.floor() as i32,
             item.position.y.floor() as i32,

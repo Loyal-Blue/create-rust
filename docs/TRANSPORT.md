@@ -1,4 +1,4 @@
-# Transport: content 0.6.0 / native 0.4.0
+# Transport: content 0.7.0 / native 0.5.0
 
 Flat belts carry the game's real dropped-item stacks. Power a side shaft port with a motor, shaft or geared drive; the shaft axis is perpendicular to travel. Adjacent, aligned belts share rotation. Reversing the source reverses travel; loss of power, drive conflicts and overstress stop belts. Belt load is a prototype 1 stress unit per RPM per segment. Ordinary, unowned items on a belt have their despawn timer reset, including while the belt is stopped. Players can still pick stacks up.
 
@@ -36,6 +36,6 @@ Wheat travels as a visible world stack, enters the millstone's input row, and pr
 
 ## Current limits
 
-Belts are separate flat segments, not full Create multiblock structures. There are no slopes, corners, tunnels, covers, junction routing, moving players/mobs or automatic end ejection into inventories. Funnel models use static imported art; their mode/filter is reported in chat. Belts do not yet animate their surface or process loose items under a press, mixer, fan or spout. Use funnels to feed the existing machine/depot/basin inventories. Brass filters match one item ID, not NBT/components or filter-item lists. Transport is paused in unloaded chunks and uses ordinary item-entity networking/storage.
+Belts are separate flat segments, not full Create multiblock structures. There are no slopes, corners, tunnels, covers, junction routing, moving players/mobs or automatic end ejection into inventories. Funnel models use static imported art; their mode/filter is reported in chat. Belts do not yet animate their surface. Presses and spouts can now process compatible loose belt stacks; fans process loose stacks and depots in their air stream. Mixers still work through basin inventories. See WORLD_PROCESSING.md for those arrangements. Brass filters match one item ID, not NBT/components or filter-item lists. Transport is paused in unloaded chunks and uses ordinary item-entity networking/storage.
 
 The adapter has compiled and its core/host-stack tests pass; real gameplay, collision, rendering and multiplayer behavior still need in-game verification. This is not a complete Create port.

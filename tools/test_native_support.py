@@ -19,6 +19,7 @@ with tempfile.TemporaryDirectory(prefix='create-support-tests-') as tmp:
         'horizon-items': a.horizon.resolve() / 'crates/horizon-items',
         'horizon-client-core': a.horizon.resolve() / 'crates/horizon-client-core',
         'create-runtime': r / 'crates/create-machines',
+        'create-simulation': r / 'crates/create-recipes',
     }
     manifest = '[package]\nname="create-native-support-tests"\nversion="0.1.0"\nedition="2024"\n[dependencies]\n'
     manifest += ''.join(f'{name}={{path={json.dumps(str(path))}}}\n' for name, path in dependencies.items())
@@ -31,8 +32,8 @@ with tempfile.TemporaryDirectory(prefix='create-support-tests-') as tmp:
     source += '#[cfg(test)] mod authored { use super::*; #[test] fn current_content_shapes_and_items_validate() { let config:Config=serde_json::from_str(include_str!(' + json.dumps(str(r / 'content/data/create/create_preview/support.json')) + ')).unwrap(); validate(&config).unwrap(); assert!(config.blocks.contains_key("create:belt")); assert!(config.items.iter().any(|i|i.id=="create:belt_connector")); let ids:std::collections::BTreeSet<_>=config.items.iter().map(|i|&i.id).collect(); assert_eq!(ids.len(),config.items.len()); }} }\n'
     source += 'mod migration {use std::io;use horizon_world::registry::BlockStateId;\n'
     source += (n / 'migrate.rs').read_text() + '\n#[cfg(test)]mod tests{' + (r / 'tests/native_migration.rs').read_text() + '}}\n'
-    source += '#[cfg(test)] mod bridge { use create_runtime as machines; use horizon_items::items::ItemStack;\n'
+    source += '#[cfg(test)] mod bridge { use create_runtime as machines; use create_simulation as recipes; use horizon_items::items::ItemStack;\n'
     source += 'mod horizon_client {pub use horizon_items::item_data;pub use horizon_client_core::snbt;}\n'
-    source += bridge + '\nmod tests {\n' + (r / 'tests/native_machine_bridge.rs').read_text() + '\n}}\n'
+    source += bridge + (n / 'surface_items.rs').read_text() + '\nmod tests {\n' + (r / 'tests/native_machine_bridge.rs').read_text() + '\n}}\n'
     (t / 'src/lib.rs').write_text(source)
     subprocess.run(['cargo', 'test', '--manifest-path', str(t / 'Cargo.toml')], check=True)
