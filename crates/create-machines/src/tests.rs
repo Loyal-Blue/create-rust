@@ -231,3 +231,23 @@ fn press_over_basin_falls_back_without_resetting_progress() {
     }
     panic!("pressing fallback reset its progress");
 }
+
+#[test]
+fn transport_settings_roundtrip_and_old_saves_keep_defaults() {
+    let old = MachineState::decode(r#"{"version":1,"rpm":16.0}"#).unwrap();
+    assert!(!old.extracting);
+    assert_eq!(old.transfer_limit, 1);
+    let state = MachineState {
+        extracting: true,
+        item_filter: Some("minecraft:iron_ingot".into()),
+        transfer_limit: 64,
+        ..Default::default()
+    };
+    assert_eq!(MachineState::decode(&state.encode()).unwrap(), state);
+    let mut bad = state.clone();
+    bad.transfer_limit = 0;
+    assert!(MachineState::decode(&bad.encode()).is_err());
+    bad = state;
+    bad.item_filter = Some("invalid".into());
+    assert!(MachineState::decode(&bad.encode()).is_err());
+}

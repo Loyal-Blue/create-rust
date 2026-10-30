@@ -37,6 +37,9 @@ pub struct MachineState {
     pub stress: f32,
     pub status: String,
     pub motor_rpm: f32,
+    pub extracting: bool,
+    pub item_filter: Option<String>,
+    pub transfer_limit: u32,
 }
 impl Default for MachineState {
     fn default() -> Self {
@@ -59,6 +62,9 @@ impl Default for MachineState {
             stress: 0.,
             status: String::new(),
             motor_rpm: 16.0,
+            extracting: false,
+            item_filter: None,
+            transfer_limit: 1,
         }
     }
 }
@@ -84,6 +90,11 @@ impl MachineState {
             || !state.stress.is_finite()
             || state.stress < 0.
             || ![-1, 1].contains(&state.direction)
+            || ![1, 16, 64].contains(&state.transfer_limit)
+            || state
+                .item_filter
+                .as_deref()
+                .is_some_and(|id| !create_simulation::valid_id(id))
             || !valid_tank(&state.fluid_in)
             || !valid_tank(&state.fluid_out)
             || state
@@ -423,11 +434,8 @@ pub fn container_size(block: &str) -> Option<usize> {
         path,
         "basin"
             | "depot"
-            | "belt"
             | "chute"
             | "smart_chute"
-            | "andesite_funnel"
-            | "brass_funnel"
             | "item_vault"
             | "mechanical_crafter"
             | "mechanical_drill"
@@ -444,6 +452,8 @@ pub fn container_size(block: &str) -> Option<usize> {
                 | "smart_fluid_pipe"
                 | "mechanical_pump"
                 | "blaze_burner"
+                | "andesite_funnel"
+                | "brass_funnel"
         )
     {
         return Some(0);
@@ -453,6 +463,7 @@ pub fn container_size(block: &str) -> Option<usize> {
 #[cfg(test)]
 mod tests;
 
+pub mod transport;
 pub mod worldgen;
 
 /// A received rotation phase advanced by elapsed local time, independent of

@@ -678,7 +678,11 @@ pub(super) fn tick_machines(game: &mut Game<'_>) {
             continue;
         };
         let saved = read_machine(game, *p);
-        node.direction = saved.direction;
+        node.direction = if node.kind == transmission::Kind::Belt {
+            node.direction * saved.direction
+        } else {
+            saved.direction
+        };
         match node.kind {
             transmission::Kind::CreativeMotor => node.configured_rpm = Some(saved.motor_rpm),
             transmission::Kind::HandCrank => node.active = saved.crank_until > tick,
@@ -878,6 +882,7 @@ pub(super) fn tick_machines(game: &mut Game<'_>) {
             move_item(game, *p, below);
         }
     }
+    tick_transport(game, &positions, &solved.speeds);
     thread_local! { static SENT: std::cell::RefCell<BTreeMap<(std::path::PathBuf,String),BTreeMap<MachinePos,String>>>=const { std::cell::RefCell::new(BTreeMap::new()) }; }
     let values: Vec<_> = positions
         .iter()

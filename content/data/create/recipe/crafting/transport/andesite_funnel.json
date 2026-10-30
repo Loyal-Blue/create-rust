@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "redstone",
+  "ingredients": [
+    "create:andesite_alloy",
+    "minecraft:dried_kelp"
+  ],
+  "result": {
+    "id": "create:andesite_funnel",
+    "count": 2
+  }
+}

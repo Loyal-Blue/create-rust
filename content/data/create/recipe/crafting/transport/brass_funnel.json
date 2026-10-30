@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "redstone",
+  "ingredients": [
+    "create:brass_ingot",
+    "minecraft:dried_kelp"
+  ],
+  "result": {
+    "id": "create:brass_funnel",
+    "count": 2
+  }
+}

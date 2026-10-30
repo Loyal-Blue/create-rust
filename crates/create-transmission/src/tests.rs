@@ -345,7 +345,7 @@ fn extreme_coordinates_do_not_wrap_or_panic() {
 }
 #[test]
 fn malformed_states_are_rejected_instead_of_silently_becoming_y() {
-    use crate::state::{Registry, parse_state};
+    use super::state::{Registry, parse_state};
     let r = Registry::new();
     for s in [
         "create:shaft[axis=q]",
@@ -409,4 +409,27 @@ fn configured_source_speed_clamps_and_nonfinite_stops() {
     assert_eq!(solve(&nodes).speeds[&p], 256.0);
     nodes.get_mut(&p).unwrap().configured_rpm = Some(f32::NAN);
     assert_eq!(solve(&nodes).speeds[&p], 0.0);
+}
+
+#[test]
+fn flat_belts_share_drive_and_preserve_world_direction() {
+    let r = super::state::Registry::new();
+    let mut motor = super::state::parse_state(&r, "create:creative_motor[facing=east]").unwrap();
+    motor.configured_rpm = Some(32.0);
+    let south = super::state::parse_state(&r, "create:belt[facing=south]").unwrap();
+    let north = super::state::parse_state(&r, "create:belt[facing=north]").unwrap();
+    let nodes = std::collections::BTreeMap::from([
+        ([-1, 0, 0], motor),
+        ([0, 0, 0], south),
+        ([0, 0, 1], north),
+        ([0, 0, 2], south),
+    ]);
+    let result = solve(&nodes);
+    assert_eq!(result.speeds[&[0, 0, 0]], 32.0);
+    assert_eq!(result.speeds[&[0, 0, 1]], -32.0);
+    assert_eq!(result.speeds[&[0, 0, 2]], 32.0);
+    assert!(modifier(&south, &south, [0, 1, 0]).is_none());
+    let mut broken = nodes.clone();
+    broken.remove(&[0, 0, 1]);
+    assert_eq!(solve(&broken).speeds[&[0, 0, 2]], 0.0);
 }

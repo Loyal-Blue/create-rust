@@ -1,16 +1,18 @@
-# Validation: content 0.5.1 / native 0.3.1
+# Validation: content 0.6.0 / native 0.4.0
 
 Checked on 2026-10-30 against Horizon `47a3b39fa9e419ec03221fca5ef402d58e831f14` and horizon-mixins `cb1ad23022392d88f006cf94cbf6552a73f5df12`.
 
-- Root Rust workspace: 73 tests passed (10 placement, 33 transmission, 19 machine transactions/state, 11 recipe simulation).
-- Ten native fixtures passed: three additional real Horizon ItemStack bridge tests cover parsed motor/press drive ports, processing a named iron stack, unpowered preservation, and retention of a damaged/named deployer tool. The seven earlier fixtures cover body shapes, creative/search completeness, safe symlink overlay replacement, page visibility, saved-state migration and facing preservation.
+- Root Rust workspace: 80 tests passed (10 placement, 34 transmission, 25 machine transactions/state/transport, 11 recipe simulation).
+- Twelve native fixtures passed: three additional real Horizon ItemStack bridge tests cover parsed motor/press drive ports, processing a named iron stack, unpowered preservation, and retention of a damaged/named deployer tool. The new transport fixture sends a real host stack through export, world-stack insertion, pressing and output extraction. Another fixture validates the current authored shapes and creative item list. The seven earlier fixtures cover body shapes, creative/search completeness, safe symlink overlay replacement, page visibility, saved-state migration and facing preservation.
 - Geared press test connects a motor through a 2:1 cog pair, processes live-style slots and reloads machine state between ticks. Other tests cover stress stalls, source conflicts, configured RPM validation, output backpressure, stale inventory commits, component preservation, fluid transfer, burner timers, slot automation and bounded deterministic ore placement.
 - Workspace formatting and clippy with warnings denied pass.
 - horizon-mixins stages 18 HEAD hooks and two modules. Patched `horizon-client` passes `cargo check --locked -p horizon-client --bin horizon-client --no-default-features`.
-- Horizon package/model validation: 36 registered blocks, 36 standalone items, 36 blockstate definitions, 72 client item definitions and 142 model JSON files; all model references resolve and bake (26,902 quads). Vanilla parents use minimal structural stubs for this check, not player resources.
+- Horizon package/model validation: 39 registered blocks, 37 standalone items, 39 blockstate definitions, 76 client item definitions and 156 model JSON files; all model references resolve and bake (27,343 quads). Vanilla parents use minimal structural stubs for this check, not player resources.
 
 No game was launched: player-owned prepared game resources are unavailable here. Compilation and fixtures do not prove gameplay, rendering, save/rejoin behavior or multiplayer correctness. This build implements server-side processing and state synchronization, but their integration still needs running-game verification. Placement corrects the successfully placed state; not every pre-placement clearance/collision rule is replaced. See FUNCTIONAL_SCOPE.md for approximations and missing systems.
 
 Original artwork remains a local build input and was not uploaded publicly.
 
 Native 0.3.1 regression checks cover basin pressing fallback without resetting progress, a press finishing at water-wheel speed, component-bearing ingredients, input-row selection, status reasons, rotation packet continuity, speed changes and bounded prediction after snapshots stop. Host bridge fixtures extract the production portable/restore functions rather than copy their logic. No in-game latency measurement or complete running-game reproduction was possible; the reported gameplay symptoms are addressed by these code paths and tests, pending player verification.
+
+Native 0.4.0 adds tests for flat belt drive propagation/reversal, disconnected runs, bounded shaft-connection geometry, lane-specific funnel mouths, non-stealing machine output ranges, filters and saved transport settings. The patched engine compiles with the complete transport adapter. These are code/fixture checks, not a running-game transport or multiplayer test. Original transport artwork is imported only into the private local content package; the public belt geometry is project-authored.

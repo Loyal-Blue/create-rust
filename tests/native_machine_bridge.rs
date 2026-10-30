@@ -92,3 +92,46 @@ fn retained_host_tool_keeps_damage_and_components() {
     }
     panic!("deployer did not retain its tool");
 }
+
+#[test]
+fn funnel_world_stack_and_machine_pipeline_preserves_items() {
+    let mut chest = vec![None; 27];
+    chest[0] = Some(named_iron());
+    let original = chest.clone();
+    let (out, world) = machines::transfer(&portable(&chest), &[None], 1, |_| 64).unwrap();
+    chest = restore(&out.after, &chest).unwrap();
+    let world = restore(&world.after, &original).unwrap();
+    let input = vec![None; 27];
+    let (world_after, insert) =
+        machines::transfer(&portable(&world), &portable(&input), 1, |_| 64).unwrap();
+    assert!(world_after.after[0].is_none());
+    let mut mill = restore(&insert.after, &world).unwrap();
+    let mut state = machines::MachineState::default();
+    for _ in 0..100 {
+        let u = machines::process(
+            &state,
+            &portable(&mill),
+            "pressing",
+            16.0,
+            machines::Heat::None,
+            |_| 64,
+        )
+        .unwrap();
+        state = u.state;
+        mill = restore(&u.inventory.after, &mill).unwrap();
+        if u.result == machines::TickResult::Completed {
+            break;
+        }
+    }
+    let range = machines::transport::source_slots("create:mechanical_press", mill.len());
+    let (source, output) =
+        machines::transfer(&portable(&mill[range]), &[None], 64, |_| 64).unwrap();
+    assert!(source.after.iter().all(Option::is_none));
+    assert_eq!(output.after[0].as_ref().unwrap().id, "create:iron_sheet");
+    assert_eq!(output.after[0].as_ref().unwrap().count, 1);
+    assert_eq!(chest[0].as_ref().unwrap().count, 2);
+    assert_eq!(
+        portable(&chest)[0].as_ref().unwrap().components,
+        portable(&original)[0].as_ref().unwrap().components
+    );
+}

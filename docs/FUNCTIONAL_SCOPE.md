@@ -1,4 +1,4 @@
-# Functional scope: native 0.3.1
+# Functional scope: native 0.4.0
 
 These are implemented code paths, not claims of in-game validation or exact Java parity.
 
@@ -22,14 +22,16 @@ These are implemented code paths, not claims of in-game validation or exact Java
 | Fluid tank | Persistent fluid input/output stores, 8,000 mB capacity each | Multiblock merging, original visuals and capacity rules |
 | Fluid pipe, mechanical pump | Signed RPM moves fluids through straight runs up to 16 pipes | Branches, valves, water-source extraction, original pump drive topology |
 | Spout, item drain | Filling/emptying recipes without kinetic power; spout can target depot below | World item transport and original fluid rendering |
+| Flat belt | Real dropped-item movement; straight shaft coupling; reversal/stalls; connector placement | Slopes, junctions, covers, entity transport and belt-surface animation |
+| Andesite/brass funnel | Import/export, redstone pause, amounts, brass item-ID filter, machine slot rules | Smart filter lists, NBT matching, full original model states and side rules |
 | Chute | One-item vertical transfers per tick; component-safe snapshots | Original falling-item behavior, smart chutes and filters |
 | Hoppers | Machine top-row insertion/middle-row extraction | Original side-specific automation rules |
 | Zinc/deepslate zinc ores | Fresh overworld generation, raw zinc drops, smelt/blast zinc | Exact distribution, fortune/silk rules; no retro-generation |
 | Casings, alloy/brass/zinc blocks | Placeable material blocks and recipes | Interactive encasing of drives |
 | Standalone materials/foods/wrench | Registered art, recipes, wrench rotation | Tea effects, XP-nugget use, full original food effects |
-| Creative inventory | 72 entries on page 2 with search | Running-game layout/input verification |
+| Creative inventory | 76 entries on page 2 with search | Running-game layout/input verification |
 | Persistence/network | Chunk metadata for machines; ordinary block-entity item storage; server snapshots | Real save/rejoin/multiplayer verification |
 
 Recipe simulation includes 338 entries. The adapter only considers recipes whose item outputs exist in the host registry, so uninstalled decorative outputs cannot consume inputs or block supported recipes. The tag matcher, work durations, chances and machine inventories are prototype rules rather than exact Create behavior. Content crafting/smelting uses the engine data pack path.
 
-Belts, funnels, tunnels, mechanical crafters, sequenced assembly world machines, schematics, moving contraptions, bearings, pistons, elevators, trains and most of Create's decorative/content catalogue are not implemented. They require substantial further work.
+Sloped/branched belts, tunnels, mechanical crafters, sequenced assembly world machines, schematics, moving contraptions, bearings, pistons, elevators, trains and most of Create's decorative/content catalogue are not implemented. They require substantial further work.

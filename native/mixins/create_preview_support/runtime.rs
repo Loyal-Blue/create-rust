@@ -543,6 +543,7 @@ impl Kind {
             Kind::MechanicalDrill => 4.0,
             Kind::CrushingWheel => 8.0,
             Kind::Deployer | Kind::MechanicalPump => 4.0,
+            Kind::Belt => 1.0,
             _ => 0.0,
         }
     }
@@ -689,6 +690,9 @@ fn half_sign(n: &Node, d: Pos) -> f32 {
             -d[port].signum() as f32
         };
     }
+    if n.kind == Kind::Belt {
+        return f32::from(n.direction.signum());
+    }
     if n.kind == Kind::Gearshift && d[n.axis.index()] > 0 && n.direction < 0 {
         -1.0
     } else {
@@ -708,6 +712,16 @@ pub fn modifier(a: &Node, b: &Node, d: Pos) -> Option<f32> {
     // A shaft runs through both: same axis, along it.
     if touching.is_some() && has_shaft_towards(a, d) && has_shaft_towards(b, d.map(|v| -v)) {
         return Some(half_sign(a, d) / half_sign(b, d.map(|v| -v)));
+    }
+
+    if a.kind == Kind::Belt
+        && b.kind == Kind::Belt
+        && a.axis == b.axis
+        && manhattan(d) == 1
+        && d[1] == 0
+        && d[a.axis.index()] == 0
+    {
+        return Some(f32::from(a.direction.signum()) / f32::from(b.direction.signum()));
     }
 
     if a.kind == Kind::EncasedChainDrive
@@ -1039,6 +1053,14 @@ pub fn parse_state(reg: &Registry, state: &str) -> Option<Node> {
             _ => 1 << (axis.index() * 2 + usize::from(!positive)),
         };
         match kind {
+            Kind::Belt => {
+                if axis == Axis::Y {
+                    return None;
+                }
+                node.axis = if axis == Axis::X { Axis::Z } else { Axis::X };
+                node.ports = 3 << (node.axis.index() * 2);
+                node.direction = if positive { 1 } else { -1 };
+            }
             Kind::MechanicalPress => {
                 node.axis = if axis == Axis::Y { Axis::Z } else { axis };
                 node.ports = 3 << (node.axis.index() * 2);
@@ -1511,7 +1533,7 @@ fn extreme_coordinates_do_not_wrap_or_panic() {
 }
 #[test]
 fn malformed_states_are_rejected_instead_of_silently_becoming_y() {
-    use crate::state::{Registry, parse_state};
+    use super::state::{Registry, parse_state};
     let r = Registry::new();
     for s in [
         "create:shaft[axis=q]",
@@ -1575,6 +1597,29 @@ fn configured_source_speed_clamps_and_nonfinite_stops() {
     assert_eq!(solve(&nodes).speeds[&p], 256.0);
     nodes.get_mut(&p).unwrap().configured_rpm = Some(f32::NAN);
     assert_eq!(solve(&nodes).speeds[&p], 0.0);
+}
+
+#[test]
+fn flat_belts_share_drive_and_preserve_world_direction() {
+    let r = super::state::Registry::new();
+    let mut motor = super::state::parse_state(&r, "create:creative_motor[facing=east]").unwrap();
+    motor.configured_rpm = Some(32.0);
+    let south = super::state::parse_state(&r, "create:belt[facing=south]").unwrap();
+    let north = super::state::parse_state(&r, "create:belt[facing=north]").unwrap();
+    let nodes = std::collections::BTreeMap::from([
+        ([-1, 0, 0], motor),
+        ([0, 0, 0], south),
+        ([0, 0, 1], north),
+        ([0, 0, 2], south),
+    ]);
+    let result = solve(&nodes);
+    assert_eq!(result.speeds[&[0, 0, 0]], 32.0);
+    assert_eq!(result.speeds[&[0, 0, 1]], -32.0);
+    assert_eq!(result.speeds[&[0, 0, 2]], 32.0);
+    assert!(modifier(&south, &south, [0, 1, 0]).is_none());
+    let mut broken = nodes.clone();
+    broken.remove(&[0, 0, 1]);
+    assert_eq!(solve(&broken).speeds[&[0, 0, 2]], 0.0);
 }
 
 }
@@ -12185,6 +12230,9 @@ pub struct MachineState {
     pub stress: f32,
     pub status: String,
     pub motor_rpm: f32,
+    pub extracting: bool,
+    pub item_filter: Option<String>,
+    pub transfer_limit: u32,
 }
 impl Default for MachineState {
     fn default() -> Self {
@@ -12207,6 +12255,9 @@ impl Default for MachineState {
             stress: 0.,
             status: String::new(),
             motor_rpm: 16.0,
+            extracting: false,
+            item_filter: None,
+            transfer_limit: 1,
         }
     }
 }
@@ -12232,6 +12283,11 @@ impl MachineState {
             || !state.stress.is_finite()
             || state.stress < 0.
             || ![-1, 1].contains(&state.direction)
+            || ![1, 16, 64].contains(&state.transfer_limit)
+            || state
+                .item_filter
+                .as_deref()
+                .is_some_and(|id| !super::recipes::valid_id(id))
             || !valid_tank(&state.fluid_in)
             || !valid_tank(&state.fluid_out)
             || state
@@ -12571,11 +12627,8 @@ pub fn container_size(block: &str) -> Option<usize> {
         path,
         "basin"
             | "depot"
-            | "belt"
             | "chute"
             | "smart_chute"
-            | "andesite_funnel"
-            | "brass_funnel"
             | "item_vault"
             | "mechanical_crafter"
             | "mechanical_drill"
@@ -12592,6 +12645,8 @@ pub fn container_size(block: &str) -> Option<usize> {
                 | "smart_fluid_pipe"
                 | "mechanical_pump"
                 | "blaze_burner"
+                | "andesite_funnel"
+                | "brass_funnel"
         )
     {
         return Some(0);
@@ -12834,8 +12889,252 @@ fn press_over_basin_falls_back_without_resetting_progress() {
     panic!("pressing fallback reset its progress");
 }
 
+#[test]
+fn transport_settings_roundtrip_and_old_saves_keep_defaults() {
+    let old = MachineState::decode(r#"{"version":1,"rpm":16.0}"#).unwrap();
+    assert!(!old.extracting);
+    assert_eq!(old.transfer_limit, 1);
+    let state = MachineState {
+        extracting: true,
+        item_filter: Some("minecraft:iron_ingot".into()),
+        transfer_limit: 64,
+        ..Default::default()
+    };
+    assert_eq!(MachineState::decode(&state.encode()).unwrap(), state);
+    let mut bad = state.clone();
+    bad.transfer_limit = 0;
+    assert!(MachineState::decode(&bad.encode()).is_err());
+    bad = state;
+    bad.item_filter = Some("invalid".into());
+    assert!(MachineState::decode(&bad.encode()).is_err());
 }
 
+}
+
+pub mod transport {
+// Flat belt and funnel rules. Item entities/inventories remain owned by the host.
+use super::{INPUT, OUTPUT, Stack};
+pub type Pos = [i32; 3];
+pub const BELT_SURFACE: f64 = 13.0 / 16.0;
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Facing {
+    North,
+    South,
+    East,
+    West,
+}
+impl Facing {
+    pub fn parse(s: &str) -> Option<Self> {
+        Some(match s {
+            "north" => Self::North,
+            "south" => Self::South,
+            "east" => Self::East,
+            "west" => Self::West,
+            _ => return None,
+        })
+    }
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::North => "north",
+            Self::South => "south",
+            Self::East => "east",
+            Self::West => "west",
+        }
+    }
+    pub fn step(self) -> Pos {
+        match self {
+            Self::North => [0, 0, -1],
+            Self::South => [0, 0, 1],
+            Self::East => [1, 0, 0],
+            Self::West => [-1, 0, 0],
+        }
+    }
+    pub fn shaft_axis(self) -> super::kinetics::Axis {
+        if self.step()[0] != 0 {
+            super::kinetics::Axis::Z
+        } else {
+            super::kinetics::Axis::X
+        }
+    }
+    pub fn sign(self) -> i8 {
+        if matches!(self, Self::North | Self::West) {
+            -1
+        } else {
+            1
+        }
+    }
+}
+/// A validated, bounded straight connection; the host checks replaceability
+/// and loaded chunks for the complete plan before it places anything.
+pub fn connection(start: Pos, end: Pos, axis: super::kinetics::Axis) -> Option<(Facing, Vec<Pos>)> {
+    let d = [
+        end[0].checked_sub(start[0])?,
+        end[1].checked_sub(start[1])?,
+        end[2].checked_sub(start[2])?,
+    ];
+    if d[1] != 0 || (d[0] != 0) == (d[2] != 0) {
+        return None;
+    }
+    let facing = if d[0] > 0 {
+        Facing::East
+    } else if d[0] < 0 {
+        Facing::West
+    } else if d[2] > 0 {
+        Facing::South
+    } else {
+        Facing::North
+    };
+    if facing.shaft_axis() != axis {
+        return None;
+    }
+    let distance = d[0].unsigned_abs().max(d[2].unsigned_abs());
+    if !(1..=16).contains(&distance) {
+        return None;
+    }
+    let step = facing.step();
+    let mut positions = Vec::new();
+    for n in 0..=distance as i32 {
+        positions.push([
+            start[0].checked_add(step[0] * n)?,
+            start[1],
+            start[2].checked_add(step[2] * n)?,
+        ]);
+    }
+    Some((facing, positions))
+}
+/// Set horizontal speed each tick, including zero when stopped. A weak
+/// centering velocity prevents successive seams from pushing stacks sideways.
+pub fn belt_velocity(facing: Facing, rpm: f32, local: [f64; 3]) -> Option<[f64; 2]> {
+    if !rpm.is_finite()
+        || !local.iter().all(|v| v.is_finite())
+        || !(BELT_SURFACE - 0.04..=BELT_SURFACE + 0.30).contains(&local[1])
+        || !(0.0..1.0).contains(&local[0])
+        || !(0.0..1.0).contains(&local[2])
+    {
+        return None;
+    }
+    let step = facing.step();
+    let speed = f64::from(rpm.clamp(-256.0, 256.0)) / 512.0;
+    let center = if rpm == 0.0 {
+        0.0
+    } else if step[0] != 0 {
+        (0.5 - local[2]) * 0.15
+    } else {
+        (0.5 - local[0]) * 0.15
+    };
+    Some(if step[0] != 0 {
+        [speed * f64::from(step[0]), center]
+    } else {
+        [center, speed * f64::from(step[2])]
+    })
+}
+/// A mouth only reaches into its own lane, never through the attached inventory.
+pub fn at_mouth(facing: Facing, relative: [f64; 3]) -> bool {
+    if !relative.iter().all(|v| v.is_finite()) {
+        return false;
+    }
+    let step = facing.step();
+    let along = relative[0] * f64::from(step[0]) + relative[2] * f64::from(step[2]);
+    let across = if step[0] != 0 {
+        relative[2]
+    } else {
+        relative[0]
+    };
+    (0.0..=1.6).contains(&along) && across.abs() <= 0.45 && relative[1].abs() <= 0.5
+}
+pub fn filter_accepts(filter: Option<&str>, stack: &Stack) -> bool {
+    filter.is_none_or(|id| id == stack.id)
+}
+pub fn source_slots(name: &str, len: usize) -> std::ops::Range<usize> {
+    if super::station(name).is_some() || matches!(name, "create:basin" | "create:depot") {
+        OUTPUT.start.min(len)..OUTPUT.end.min(len)
+    } else {
+        0..len
+    }
+}
+pub fn input_slots(name: &str, len: usize) -> std::ops::Range<usize> {
+    if super::station(name).is_some() || matches!(name, "create:basin" | "create:depot") {
+        0..INPUT.end.min(len)
+    } else {
+        0..len
+    }
+}
+pub fn supported_container(name: &str) -> bool {
+    (name.starts_with("create:") && super::container_size(name).is_some_and(|n| n >= 18))
+        || matches!(
+            name,
+            "minecraft:chest"
+                | "minecraft:trapped_chest"
+                | "minecraft:barrel"
+                | "minecraft:hopper"
+                | "minecraft:dispenser"
+                | "minecraft:dropper"
+        )
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn connector_checks_axis_length_and_corners() {
+        let (f, p) = connection([0, 5, 0], [0, 5, 4], super::super::kinetics::Axis::X).unwrap();
+        assert_eq!(f, Facing::South);
+        assert_eq!(p.len(), 5);
+        assert!(connection([0, 0, 0], [2, 0, 2], super::super::kinetics::Axis::X).is_none());
+        assert!(connection([0, 0, 0], [0, 0, 17], super::super::kinetics::Axis::X).is_none());
+        assert!(connection([0, 0, 0], [0, 1, 4], super::super::kinetics::Axis::X).is_none());
+        assert!(connection([0, 0, 0], [0, 0, 4], super::super::kinetics::Axis::Z).is_none());
+    }
+    #[test]
+    fn belt_reverses_stops_and_ignores_airborne_items() {
+        let local = [0.5, BELT_SURFACE, 0.5];
+        assert_eq!(
+            belt_velocity(Facing::South, 64.0, local),
+            Some([0.0, 0.125])
+        );
+        assert_eq!(
+            belt_velocity(Facing::South, -64.0, local),
+            Some([0.0, -0.125])
+        );
+        assert_eq!(belt_velocity(Facing::South, 0.0, local), Some([0.0, 0.0]));
+        assert!(belt_velocity(Facing::South, 64.0, [0.5, 1.5, 0.5]).is_none());
+        assert!(belt_velocity(Facing::South, f32::NAN, local).is_none());
+    }
+    #[test]
+    fn machine_exports_do_not_steal_unprocessed_inputs() {
+        assert_eq!(source_slots("create:mechanical_press", 27), 9..18);
+        assert_eq!(source_slots("create:basin", 27), 9..18);
+        assert_eq!(input_slots("create:millstone", 27), 0..9);
+        assert_eq!(source_slots("minecraft:chest", 27), 0..27);
+        assert!(!supported_container("minecraft:furnace"));
+        assert!(!supported_container("minecraft:shulker_box"));
+    }
+    #[test]
+    fn filtering_keeps_component_metadata() {
+        let stack = Stack {
+            id: "minecraft:iron_ingot".into(),
+            count: 9,
+            components: "{name:1}".into(),
+        };
+        assert!(filter_accepts(Some("minecraft:iron_ingot"), &stack));
+        assert!(!filter_accepts(Some("minecraft:gold_ingot"), &stack));
+        assert!(filter_accepts(None, &stack));
+        assert_eq!(stack.components, "{name:1}");
+    }
+}
+
+#[cfg(test)]
+mod mouth_tests {
+    use super::*;
+    #[test]
+    fn mouths_ignore_neighbor_lanes_and_items_behind() {
+        assert!(at_mouth(Facing::South, [0.0, 0.0, 0.8]));
+        assert!(at_mouth(Facing::North, [0.0, 0.0, -0.8]));
+        assert!(!at_mouth(Facing::South, [1.0, 0.0, 0.8]));
+        assert!(!at_mouth(Facing::South, [0.0, 0.0, -0.8]));
+    }
+}
+
+}
 pub mod worldgen {
 // Deterministic prototype zinc veins. The host applies these only to fresh
 // overworld chunks and only replaces natural stone/deepslate.
@@ -13053,7 +13352,12 @@ pub(super) fn placed(
     let kind = if s.properties.contains_key("facing") {
         if matches!(
             name.as_str(),
-            "create:mechanical_press" | "create:mechanical_mixer" | "create:millstone"
+            "create:mechanical_press"
+                | "create:mechanical_mixer"
+                | "create:millstone"
+                | "create:belt"
+                | "create:andesite_funnel"
+                | "create:brass_funnel"
         ) {
             Placement::Upright
         } else {
@@ -13126,7 +13430,12 @@ pub(super) fn wrench_block(game: &mut Game<'_>, pos: [i32; 3]) -> Result<bool> {
     let (key, values): (&str, &[&str]) = if s.properties.contains_key("facing") {
         if matches!(
             s.name.as_str(),
-            "create:mechanical_press" | "create:mechanical_mixer" | "create:millstone"
+            "create:mechanical_press"
+                | "create:mechanical_mixer"
+                | "create:millstone"
+                | "create:belt"
+                | "create:andesite_funnel"
+                | "create:brass_funnel"
         ) {
             ("facing", &["south", "west", "north", "east"])
         } else {
@@ -14130,7 +14439,11 @@ pub(super) fn tick_machines(game: &mut Game<'_>) {
             continue;
         };
         let saved = read_machine(game, *p);
-        node.direction = saved.direction;
+        node.direction = if node.kind == transmission::Kind::Belt {
+            node.direction * saved.direction
+        } else {
+            saved.direction
+        };
         match node.kind {
             transmission::Kind::CreativeMotor => node.configured_rpm = Some(saved.motor_rpm),
             transmission::Kind::HandCrank => node.active = saved.crank_until > tick,
@@ -14330,6 +14643,7 @@ pub(super) fn tick_machines(game: &mut Game<'_>) {
             move_item(game, *p, below);
         }
     }
+    tick_transport(game, &positions, &solved.speeds);
     thread_local! { static SENT: std::cell::RefCell<BTreeMap<(std::path::PathBuf,String),BTreeMap<MachinePos,String>>>=const { std::cell::RefCell::new(BTreeMap::new()) }; }
     let values: Vec<_> = positions
         .iter()
@@ -14643,6 +14957,423 @@ fn generate_zinc(game: &mut Game<'_>) {
             let saved = std::sync::Arc::make_mut(chunk.saved.get_or_insert_default());
             saved.root.insert(MARKER.into(), Tag::Int(1));
             game.world.modified.insert(key);
+        }
+    }
+}
+
+// Straight, horizontal transport over the engine's existing item entities.
+use machines::transport::{self, Facing as BeltFacing};
+
+fn transport_facing(game: &Game<'_>, p: MachinePos) -> Option<BeltFacing> {
+    let state = game
+        .pack
+        .assets
+        .registry
+        .state(game.world.block(p.0, p.1, p.2))?;
+    BeltFacing::parse(state.properties.get("facing")?)
+}
+fn offset_machine(p: MachinePos, d: [i32; 3], n: i32) -> MachinePos {
+    (p.0 + d[0] * n, p.1 + d[1] * n, p.2 + d[2] * n)
+}
+fn transport_notice(game: &Game<'_>, p: MachinePos, text: &str) {
+    broadcast_machine_state(
+        game,
+        &[MachineRecord {
+            pos: [p.0, p.1, p.2],
+            name: machine_name(game, p),
+            data: read_machine(game, p),
+        }],
+        text,
+    );
+}
+pub(super) fn use_transport(game: &mut Game<'_>, p: [i32; 3]) -> Result<bool> {
+    if game.remote.is_some() || !game.may_build() {
+        return Ok(false);
+    }
+    let pos = (p[0], p[1], p[2]);
+    let held = game.held().cloned();
+    let sneaking = game.keys.contains(&winit::keyboard::KeyCode::ShiftLeft);
+    if held
+        .as_ref()
+        .is_some_and(|s| &*s.item == "create:belt_connector")
+    {
+        type Key = (std::path::PathBuf, String, Option<u128>);
+        thread_local! {static STARTS:std::cell::RefCell<BTreeMap<Key,([i32;3],std::time::Instant)>>=const{std::cell::RefCell::new(BTreeMap::new())};}
+        let key = (
+            game.save.root.clone(),
+            format!("{:?}", game.dim),
+            game.lan_acting_uuid,
+        );
+        if sneaking {
+            STARTS.with(|v| v.borrow_mut().remove(&key));
+            transport_notice(game, pos, "Create belt connection cancelled");
+            return Ok(true);
+        }
+        let Some(state) = game
+            .pack
+            .assets
+            .registry
+            .state(game.world.block(p[0], p[1], p[2]))
+        else {
+            return Ok(true);
+        };
+        if state.name != "create:shaft"
+            || state
+                .properties
+                .get("waterlogged")
+                .is_some_and(|v| v == "true")
+        {
+            transport_notice(
+                game,
+                pos,
+                "Belt connector: select two dry horizontal shafts",
+            );
+            return Ok(true);
+        }
+        let axis = match read_axis(state) {
+            Axis::X => transmission::Axis::X,
+            Axis::Z => transmission::Axis::Z,
+            _ => {
+                transport_notice(game, pos, "Belt connector: shaft must be horizontal");
+                return Ok(true);
+            }
+        };
+        let start = STARTS
+            .with(|v| v.borrow_mut().remove(&key))
+            .filter(|(_, t)| t.elapsed().as_secs() < 120)
+            .map(|(p, _)| p);
+        let Some(start) = start else {
+            STARTS.with(|v| {
+                v.borrow_mut()
+                    .retain(|_, (_, t)| t.elapsed().as_secs() < 120);
+                v.borrow_mut().insert(key, (p, std::time::Instant::now()));
+            });
+            transport_notice(
+                game,
+                pos,
+                "Belt start selected. Select a parallel shaft within 16 blocks",
+            );
+            return Ok(true);
+        };
+        let Some((facing, plan)) = transport::connection(start, p, axis) else {
+            transport_notice(
+                game,
+                pos,
+                "Belts need a straight, level run perpendicular to both shafts (max 16 blocks)",
+            );
+            return Ok(true);
+        };
+        let mut originals = Vec::new();
+        for (i, q) in plan.iter().enumerate() {
+            if !game.world.loaded(q[0], q[2]) {
+                transport_notice(game, pos, "Belt path crosses an unloaded chunk");
+                return Ok(true);
+            }
+            let id = game.world.block(q[0], q[1], q[2]);
+            if i == 0 || i + 1 == plan.len() {
+                let valid = game.pack.assets.registry.state(id).is_some_and(|s| {
+                    s.name == "create:shaft"
+                        && s.properties.get("axis").is_some_and(|v| {
+                            v == axis_name(match axis {
+                                transmission::Axis::X => Axis::X,
+                                _ => Axis::Z,
+                            })
+                        })
+                        && !s.properties.get("waterlogged").is_some_and(|v| v == "true")
+                });
+                if !valid {
+                    transport_notice(game, pos, "Belt endpoints changed; select the shafts again");
+                    return Ok(true);
+                }
+            } else if !game.res.facts().is_air(id) {
+                transport_notice(game, pos, "Belt path is blocked; no blocks were replaced");
+                return Ok(true);
+            }
+            originals.push(id);
+        }
+        let Some(belt) = game
+            .pack
+            .assets
+            .registry
+            .default_state("create:belt")
+            .and_then(|id| game.with_props(id, &[("facing", facing.name())]))
+        else {
+            return Ok(true);
+        };
+        for (i, q) in plan.iter().enumerate() {
+            if let Err(error) = game.level_set(*q, belt) {
+                for (q, old) in plan[..=i].iter().zip(&originals[..=i]) {
+                    game.level_set(*q, *old)?;
+                }
+                return Err(error);
+            }
+        }
+        game.consume_held();
+        transport_notice(
+            game,
+            pos,
+            "Create belt connected. Power either end shaft from the side",
+        );
+        return Ok(true);
+    }
+    let name = machine_name(game, pos);
+    if !matches!(
+        name.as_str(),
+        "create:andesite_funnel" | "create:brass_funnel"
+    ) || held.as_ref().is_some_and(|s| &*s.item == "create:wrench")
+    {
+        return Ok(false);
+    }
+    if sneaking && held.is_some() {
+        return Ok(false);
+    }
+    let mut state = read_machine(game, pos);
+    if let Some(held) = held {
+        if name != "create:brass_funnel" {
+            return Ok(false);
+        }
+        state.item_filter = Some(held.item.to_string());
+    } else if sneaking {
+        if state.item_filter.is_some() {
+            state.item_filter = None;
+        } else {
+            state.transfer_limit = match state.transfer_limit {
+                1 => 16,
+                16 => 64,
+                _ => 1,
+            };
+        }
+    } else {
+        state.extracting = !state.extracting;
+    }
+    let text = format!(
+        "Funnel {} | {} items | filter {}",
+        if state.extracting {
+            "extract"
+        } else {
+            "insert"
+        },
+        state.transfer_limit,
+        state.item_filter.as_deref().unwrap_or("any")
+    );
+    store_machine(game, pos, state);
+    transport_notice(game, pos, &text);
+    Ok(true)
+}
+
+fn funnel_export(
+    game: &mut Game<'_>,
+    p: MachinePos,
+    facing: BeltFacing,
+    state: &machines::MachineState,
+) {
+    let step = facing.step();
+    let container = offset_machine(p, step, -1);
+    let front = offset_machine(p, step, 1);
+    if !matches!(machine_name(game, front).as_str(), "create:belt")
+        || !game.world.loaded(container.0, container.2)
+    {
+        return;
+    }
+    let name = machine_name(game, container);
+    if !transport::supported_container(&name) {
+        return;
+    }
+    // Backpressure: a blocked receiving surface must not accumulate a new stack every tick.
+    let mouth = [
+        p.0 as f64 + 0.5 + f64::from(step[0]) * 0.85,
+        p.1 as f64 + transport::BELT_SURFACE + 0.02,
+        p.2 as f64 + 0.5 + f64::from(step[2]) * 0.85,
+    ];
+    if game.dropped.iter().any(|e| {
+        transport::at_mouth(
+            facing,
+            [
+                e.position.x - (p.0 as f64 + 0.5),
+                e.position.y - (p.1 as f64 + transport::BELT_SURFACE),
+                e.position.z - (p.2 as f64 + 0.5),
+            ],
+        )
+    }) {
+        return;
+    }
+    let Some(entity) = game.world.block_entities.get(&container) else {
+        return;
+    };
+    let before = entity.slots().to_vec();
+    let range = transport::source_slots(&name, before.len());
+    let portable_before = portable(&before);
+    let Some(index) = range.into_iter().find(|&i| {
+        portable_before[i]
+            .as_ref()
+            .is_some_and(|s| transport::filter_accepts(state.item_filter.as_deref(), s))
+    }) else {
+        return;
+    };
+    let Some((source, dest)) = machines::transfer(
+        &[portable_before[index].clone()],
+        &[None],
+        state.transfer_limit,
+        |id| game.items().get(id).map_or(1, |i| i.max_stack),
+    ) else {
+        return;
+    };
+    let (Some(left), Some(taken)) = (
+        restore(&source.after, &before),
+        restore(&dest.after, &before),
+    ) else {
+        return;
+    };
+    let Some(stack) = taken.into_iter().next().flatten() else {
+        return;
+    };
+    if let Some(entity) = game.world.block_entities.get_mut(&container) {
+        if entity.slots() != before {
+            return;
+        }
+        entity.slots_mut()[index] = left.into_iter().next().flatten();
+    } else {
+        return;
+    }
+    dirty_machine(game, container);
+    game.spawn_item(stack, mouth, [0.0, 0.0, 0.0], 10);
+}
+fn funnel_import(
+    game: &mut Game<'_>,
+    p: MachinePos,
+    facing: BeltFacing,
+    state: &machines::MachineState,
+) {
+    let step = facing.step();
+    let container = offset_machine(p, step, -1);
+    let name = machine_name(game, container);
+    if !game.world.loaded(container.0, container.2) || !transport::supported_container(&name) {
+        return;
+    }
+    let Some(entity) = game.world.block_entities.get(&container) else {
+        return;
+    };
+    let before = entity.slots().to_vec();
+    let range = transport::input_slots(&name, before.len());
+    if range.is_empty() {
+        return;
+    }
+    for i in 0..game.dropped.len() {
+        let item = &game.dropped[i];
+        if item.target.is_some()
+            || !transport::at_mouth(
+                facing,
+                [
+                    item.position.x - (p.0 as f64 + 0.5),
+                    item.position.y - (p.1 as f64 + transport::BELT_SURFACE),
+                    item.position.z - (p.2 as f64 + 0.5),
+                ],
+            )
+        {
+            continue;
+        }
+        let original = item.stack.clone();
+        let source = portable(&[Some(original.clone())]);
+        if !transport::filter_accepts(state.item_filter.as_deref(), source[0].as_ref().unwrap()) {
+            continue;
+        }
+        let Some((source, dest)) = machines::transfer(
+            &source,
+            &portable(&before[range.clone()]),
+            state.transfer_limit,
+            |id| game.items().get(id).map_or(1, |i| i.max_stack),
+        ) else {
+            continue;
+        };
+        let mut originals = before.clone();
+        originals.push(Some(original.clone()));
+        let (Some(left), Some(after)) = (
+            restore(&source.after, &originals),
+            restore(&dest.after, &originals),
+        ) else {
+            continue;
+        };
+        if let Some(entity) = game.world.block_entities.get_mut(&container) {
+            if entity.slots() != before {
+                return;
+            }
+            entity.slots_mut()[range].clone_from_slice(&after);
+        } else {
+            return;
+        }
+        if let Some(left) = left.into_iter().next().flatten() {
+            game.dropped[i].stack = left;
+        } else {
+            game.dropped.remove(i);
+        }
+        dirty_machine(game, container);
+        return;
+    }
+}
+fn tick_transport(
+    game: &mut Game<'_>,
+    positions: &[(MachinePos, String)],
+    speeds: &std::collections::HashMap<[i32; 3], f32>,
+) {
+    let mut belts = BTreeMap::new();
+    for (p, name) in positions {
+        let Some(facing) = transport_facing(game, *p) else {
+            continue;
+        };
+        if name == "create:belt" {
+            belts.insert(
+                *p,
+                (facing, speeds.get(&[p.0, p.1, p.2]).copied().unwrap_or(0.0)),
+            );
+        }
+        if matches!(
+            name.as_str(),
+            "create:andesite_funnel" | "create:brass_funnel"
+        ) {
+            let mut state = read_machine(game, *p);
+            let powered = game
+                .with_level(|b, l, t| b.has_neighbor_signal(l, t, BlockPos::new(p.0, p.1, p.2)));
+            state.status = if powered {
+                "Paused"
+            } else if state.extracting {
+                "Extracting"
+            } else {
+                "Inserting"
+            }
+            .into();
+            store_machine(game, *p, state.clone());
+            if !powered && game.world.game_time.rem_euclid(8) == 0 {
+                if state.extracting {
+                    funnel_export(game, *p, facing, &state);
+                } else {
+                    funnel_import(game, *p, facing, &state);
+                }
+            }
+        }
+    }
+    for item in &mut game.dropped {
+        let p = (
+            item.position.x.floor() as i32,
+            item.position.y.floor() as i32,
+            item.position.z.floor() as i32,
+        );
+        let Some((facing, rpm)) = belts.get(&p) else {
+            continue;
+        };
+        if let Some([x, z]) = transport::belt_velocity(
+            *facing,
+            *rpm,
+            [
+                item.position.x - f64::from(p.0),
+                item.position.y - f64::from(p.1),
+                item.position.z - f64::from(p.2),
+            ],
+        ) {
+            item.velocity.x = x;
+            item.velocity.z = z;
+            if item.target.is_none() {
+                item.age = 0;
+            }
         }
     }
 }

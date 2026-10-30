@@ -27,7 +27,8 @@ with tempfile.TemporaryDirectory(prefix='create-support-tests-') as tmp:
     body = (n / 'machines_body.rs').read_text()
     bridge = body[body.index('fn portable('):body.index('fn ensure_machine(')]
     source = 'pub type Result<T>=std::result::Result<T,Box<dyn std::error::Error>>;\npub use horizon_world::{registry,chunk};\n'
-    source += 'mod support { include!(' + json.dumps(str(n / 'support.rs')) + '); }\n'
+    source += 'mod support { include!(' + json.dumps(str(n / 'support.rs')) + ');\n'
+    source += '#[cfg(test)] mod authored { use super::*; #[test] fn current_content_shapes_and_items_validate() { let config:Config=serde_json::from_str(include_str!(' + json.dumps(str(r / 'content/data/create/create_preview/support.json')) + ')).unwrap(); validate(&config).unwrap(); assert!(config.blocks.contains_key("create:belt")); assert!(config.items.iter().any(|i|i.id=="create:belt_connector")); let ids:std::collections::BTreeSet<_>=config.items.iter().map(|i|&i.id).collect(); assert_eq!(ids.len(),config.items.len()); }} }\n'
     source += 'mod migration {use std::io;use horizon_world::registry::BlockStateId;\n'
     source += (n / 'migrate.rs').read_text() + '\n#[cfg(test)]mod tests{' + (r / 'tests/native_migration.rs').read_text() + '}}\n'
     source += '#[cfg(test)] mod bridge { use create_runtime as machines; use horizon_items::items::ItemStack;\n'

@@ -1,6 +1,11 @@
 fn use_block(game: &mut crate::game::Game<'_>, hit: Option<&crate::game::Hit>) -> core::ops::ControlFlow<Result<bool>> {
     crate::game::create_runtime::remember_hit(hit);
     if let Some(hit)=hit {
+        match crate::game::create_runtime::use_transport(game,hit.pos) {
+            Ok(true)=>return core::ops::ControlFlow::Break(Ok(true)),
+            Err(e)=>return core::ops::ControlFlow::Break(Err(e)),
+            _=>{}
+        }
         match crate::game::create_runtime::use_machine(game,hit.pos) {
             Ok(true)=>return core::ops::ControlFlow::Break(Ok(true)),
             Err(e)=>return core::ops::ControlFlow::Break(Err(e)),

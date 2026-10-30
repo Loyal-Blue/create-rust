@@ -1,6 +1,6 @@
 # Status
 
-Active build: content 0.5.1 plus native 0.3.1. The root transmission, recipe and inventory runtime crates now execute through the native server adapter; they are no longer merely historical experiments. Standard .hmod still cannot execute machinery.
+Active build: content 0.6.0 plus native 0.4.0. The root transmission, recipe and inventory runtime crates now execute through the native server adapter; they are no longer merely historical experiments. Standard .hmod still cannot execute machinery.
 
 Implemented: placement/model corrections, page-2 inventory category, source and gear transmission with stress, container-based machine processing, fluid/heat storage, simple automation, fresh-terrain zinc, chunk persistence and client state updates.
 

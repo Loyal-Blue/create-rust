@@ -105,7 +105,12 @@ pub(super) fn placed(
     let kind = if s.properties.contains_key("facing") {
         if matches!(
             name.as_str(),
-            "create:mechanical_press" | "create:mechanical_mixer" | "create:millstone"
+            "create:mechanical_press"
+                | "create:mechanical_mixer"
+                | "create:millstone"
+                | "create:belt"
+                | "create:andesite_funnel"
+                | "create:brass_funnel"
         ) {
             Placement::Upright
         } else {
@@ -178,7 +183,12 @@ pub(super) fn wrench_block(game: &mut Game<'_>, pos: [i32; 3]) -> Result<bool> {
     let (key, values): (&str, &[&str]) = if s.properties.contains_key("facing") {
         if matches!(
             s.name.as_str(),
-            "create:mechanical_press" | "create:mechanical_mixer" | "create:millstone"
+            "create:mechanical_press"
+                | "create:mechanical_mixer"
+                | "create:millstone"
+                | "create:belt"
+                | "create:andesite_funnel"
+                | "create:brass_funnel"
         ) {
             ("facing", &["south", "west", "north", "east"])
         } else {

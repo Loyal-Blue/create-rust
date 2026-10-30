@@ -2,9 +2,9 @@
 
 An independent, unfinished Create-style mod for Horizon Minecraft 26.3. Not affiliated with the Create Team or Horizon.
 
-## Current build: content 0.5.1 + native support 0.3.1
+## Current build: content 0.6.0 + native support 0.4.0
 
-This build connects machinery to server ticks, real inventory slots, chunk saves and client rotation updates. It includes 36 blocks and 36 standalone items. It is an experimental machinery baseline, not a complete port of Create. No running-game verification has been performed.
+This build connects machinery to server ticks, real inventory slots, chunk saves and client rotation updates. It includes 39 blocks and 37 standalone items. It is an experimental machinery baseline, not a complete port of Create. No running-game verification has been performed.
 
 - Directional placement, neighbor shaft alignment, upright press/mixer placement, wrench rotation, migrated saved states and corrected directional model assemblies.
 - Create category on creative inventory page **2**, with page controls above the inventory.
@@ -13,9 +13,13 @@ This build connects machinery to server ticks, real inventory slots, chunk saves
 - Burner fuel/heat, fluid storage and straight pipe pumping, chute/hopper integration, block drilling, and zinc in fresh overworld terrain.
 - Machine progress, fuel, fluids, RPM and phase saved with chunks; existing container storage saves the items. Server snapshots drive client rotation.
 
-See [functional scope](docs/FUNCTIONAL_SCOPE.md) for per-system behavior and gaps. Belts, contraptions, trains, full world deployer/saw behavior, multiblock tanks and exact Create GUIs are still absent. The 338-entry recipe catalogue is broader than the installed content; unavailable outputs are filtered before processing.
+See [functional scope](docs/FUNCTIONAL_SCOPE.md) for per-system behavior and gaps. Sloped/branched belts, contraptions, trains, full world deployer/saw behavior, multiblock tanks and exact Create GUIs are still absent. The 338-entry recipe catalogue is broader than the installed content; unavailable outputs are filtered before processing.
 
-## Fixes in native 0.3.1
+## Transport in native 0.4.0
+
+Flat belts now move real item entities, share shaft power along straight runs, reverse with the drive, and stop when stalled. Andesite/brass funnels insert or extract items, pause under redstone, and respect machine input/output rows. Brass funnels support an item-ID filter. A belt connector joins two dry, parallel horizontal shafts across a clear straight path up to 16 blocks. See [transport controls and example](docs/TRANSPORT.md). This first version does not implement slopes, junctions, belt covers, moving entities/players or processing dropped items directly on belts.
+
+## Processing fixes retained from native 0.3.1
 
 Machine-owned inputs now take priority over a depot/basin underneath. A press over a basin can also press a single ingot when no compacting recipe matches. Mixers can use their own item inputs with fluid from the basin below. Ingredient item IDs match even when stacks carry component data; surviving inputs and retained tools keep their components.
 
@@ -45,7 +49,7 @@ python3 tools/build_content.py --assets-from /path/to/current-private-preview.hm
 python3 tools/build_native.py --output dist/create-preview-support.hnmod
 ```
 
-When upgrading older local assets, use `import_recipe_items.py` and `add_zinc_resources.py` with `--jar /path/to/your-create.jar --assets-from previous.hmod --output next.hmod`, then `prepare_world_models.py --assets-from next.hmod --output corrected.hmod` before the content build. Model preparation requires NumPy and SciPy. The original 1.21.1 Create 6.0.10 JAR is an asset input, not executable code for Horizon. Do not redistribute imported original art without appropriate permission. A public replacement asset set is still needed for an independently redistributable playable release. No Mojang resources are included.
+When upgrading older local assets, use `import_recipe_items.py` and `add_zinc_resources.py` with `--jar /path/to/your-create.jar --assets-from previous.hmod --output next.hmod`, then `prepare_world_models.py --assets-from next.hmod --output corrected.hmod` before the content build. Model preparation requires NumPy and SciPy. Add the transport art with `import_transport.py --jar /path/to/your-create.jar --assets-from corrected.hmod --output transport.hmod`, then pass that archive to `build_content.py`. The original 1.21.1 Create 6.0.10 JAR is an asset input, not executable code for Horizon. Do not redistribute imported original art without appropriate permission. A public replacement asset set is still needed for an independently redistributable playable release. No Mojang resources are included.
 
 ## Source and checks
 

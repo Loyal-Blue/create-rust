@@ -147,6 +147,7 @@ impl Kind {
             Kind::MechanicalDrill => 4.0,
             Kind::CrushingWheel => 8.0,
             Kind::Deployer | Kind::MechanicalPump => 4.0,
+            Kind::Belt => 1.0,
             _ => 0.0,
         }
     }
@@ -293,6 +294,9 @@ fn half_sign(n: &Node, d: Pos) -> f32 {
             -d[port].signum() as f32
         };
     }
+    if n.kind == Kind::Belt {
+        return f32::from(n.direction.signum());
+    }
     if n.kind == Kind::Gearshift && d[n.axis.index()] > 0 && n.direction < 0 {
         -1.0
     } else {
@@ -312,6 +316,16 @@ pub fn modifier(a: &Node, b: &Node, d: Pos) -> Option<f32> {
     // A shaft runs through both: same axis, along it.
     if touching.is_some() && has_shaft_towards(a, d) && has_shaft_towards(b, d.map(|v| -v)) {
         return Some(half_sign(a, d) / half_sign(b, d.map(|v| -v)));
+    }
+
+    if a.kind == Kind::Belt
+        && b.kind == Kind::Belt
+        && a.axis == b.axis
+        && manhattan(d) == 1
+        && d[1] == 0
+        && d[a.axis.index()] == 0
+    {
+        return Some(f32::from(a.direction.signum()) / f32::from(b.direction.signum()));
     }
 
     if a.kind == Kind::EncasedChainDrive
