@@ -1,4 +1,4 @@
-# World processing: native 0.7.0
+# World processing: native 0.8.0
 
 ## Depots
 

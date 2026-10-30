@@ -569,11 +569,15 @@ fn pump_fluids(
     axis: transmission::Axis,
     rpm: f32,
     nodes: &BTreeMap<[i32; 3], machines::fluids::Node>,
+    groups: &[machines::tanks::Group],
 ) {
     let mut states = BTreeMap::new();
     if let Ok((input, output)) = machines::fluids::endpoints(nodes, [p.0, p.1, p.2], axis, rpm) {
         for q in input.into_iter().chain(output) {
-            states.insert(q, read_machine(game, (q[0], q[1], q[2])));
+            let state=if let Some(group)=groups.iter().find(|g|g.controller()==q) {
+                let Some(view)=group.gather(&tank_member_states(game,group)) else {return;};view
+            }else{read_machine(game,(q[0],q[1],q[2]))};
+            states.insert(q,state);
         }
     }
     let flow = machines::fluids::flow(
@@ -584,11 +588,9 @@ fn pump_fluids(
         rpm,
         game.world.game_time.max(0) as u64,
     );
-    for (q, state) in flow.states {
-        store_machine(game, (q[0], q[1], q[2]), state);
-    }
+    let committed=commit_tank_flow(game,flow.states,groups);
     let mut state = read_machine(game, p);
-    state.status = format!("{:?}: {} mB/t", flow.status, flow.amount);
+    state.status = if committed {format!("{:?}: {} mB/t", flow.status, flow.amount)}else{"Tank changed; flow cancelled".into()};
     store_machine(game, p, state);
 }
 fn broadcast_machine_state(game: &Game<'_>, values: &[MachineRecord], notice: &str) {
@@ -777,7 +779,8 @@ pub(super) fn tick_machines(game: &mut Game<'_>) {
         }
         store_machine(game, *p, s);
     }
-    let fluid_nodes = fluid_topology(game,&positions);
+    let mut fluid_nodes = fluid_topology(game,&positions);
+    let tank_groups=shared_tanks(game,&positions,&mut fluid_nodes);
     let surface_run = tick_surface_machines(game, &positions, &solved.speeds);
     for (p, name) in &positions {
         let mut rpm = solved.speeds.get(&[p.0, p.1, p.2]).copied().unwrap_or(0.0);
@@ -896,7 +899,7 @@ pub(super) fn tick_machines(game: &mut Game<'_>) {
         }
         if name == "create:mechanical_pump" {
             if let Some(n) = nodes.get(&[p.0, p.1, p.2]) {
-                pump_fluids(game, *p, n.axis, rpm, &fluid_nodes)
+                pump_fluids(game, *p, n.axis, rpm, &fluid_nodes,&tank_groups)
             }
         }
         if name == "create:chute" {

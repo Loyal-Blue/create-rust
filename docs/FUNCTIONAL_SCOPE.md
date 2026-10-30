@@ -1,4 +1,4 @@
-# Functional scope: native 0.7.0
+# Functional scope: native 0.8.0
 
 These are implemented code paths, not claims of in-game validation or exact Java parity.
 
@@ -19,7 +19,7 @@ These are implemented code paths, not claims of in-game validation or exact Java
 | Deployer | Container deploying recipes; retained catalysts preserve damage/components | Player-like block/entity interactions and world arm animation |
 | Basin, depot | Persistent 27-slot storage; visible depot stack, dropped-item capture and direct depot interactions | Exact original depot capacity, basin geometry/fluid display |
 | Blaze burner | Coal/charcoal/blaze-rod heat; blaze-cake superheat | Capturing blazes, original heat transitions and visuals |
-| Fluid tank | Single-fluid 8,000 mB total for new tank fills; legacy contents retained | Multiblock merging, original visuals and capacity rules |
+| Fluid tank | Shared complete 1x1/2x2/3x3 square tanks up to 32 layers; 8,000 mB per block; any-member bucket/pump access; legacy contents retained | Original tank model states, fluid rendering, connectivity rules and remote bucket controls |
 | Fluid pipe, mechanical pump | Signed RPM routes across loaded branches, 16 steps/256 nodes, one shared budget; renewable-water intakes | Original arm geometry, pressure, valves, finite-fluid extraction, pump-series propagation |
 | Spout, item drain | Spout inventory/depot/belt filling, proper water bottles, five generic bucket types; inventory/top-surface draining | Arbitrary potion conversion and original fluid rendering |
 | Flat belt | Real dropped-item movement; straight shaft coupling; reversal/stalls; connector placement | Slopes, junctions, covers, entity transport and belt-surface animation |

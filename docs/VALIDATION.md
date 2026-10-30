@@ -1,8 +1,8 @@
-# Validation: content 0.8.0 / native 0.7.0
+# Validation: content 0.8.1 / native 0.8.0
 
 Checked on 2026-10-30 against Horizon `47a3b39fa9e419ec03221fca5ef402d58e831f14` and horizon-mixins `cb1ad23022392d88f006cf94cbf6552a73f5df12`.
 
-- Root Rust workspace: 118 tests passed (10 placement, 34 transmission, 60 machine transactions/state/transport/surface/fluid/tree tests, 14 recipe simulation).
+- Root Rust workspace: 127 tests passed (10 placement, 34 transmission, 69 machine transactions/state/transport/surface/fluid/tree tests, 14 recipe simulation).
 - Twenty native fixtures passed: three additional real Horizon ItemStack bridge tests cover parsed motor/press drive ports, processing a named iron stack, unpowered preservation, and retention of a damaged/named deployer tool. The new transport fixture sends a real host stack through export, world-stack insertion, pressing and output extraction. Another fixture validates the current authored shapes and creative item list. The seven earlier fixtures cover body shapes, creative/search completeness, safe symlink overlay replacement, page visibility, saved-state migration and facing preservation.
 - Geared press test connects a motor through a 2:1 cog pair, processes live-style slots and reloads machine state between ticks. Other tests cover stress stalls, source conflicts, configured RPM validation, output backpressure, stale inventory commits, component preservation, fluid transfer, burner timers, slot automation and bounded deterministic ore placement.
 - Workspace formatting and clippy with warnings denied pass.
@@ -26,3 +26,5 @@ Native 0.6.0 adds loose-container draining, upward-saw cutting, typed named-stac
 Native 0.6.0 also checks chute mouth bounds/upward rejection, full-inventory backpressure and named real-host capture/discharge conservation. Chute outlets honor empty-slot metadata on belt block entities rather than mistaking those for storage inventories. The runtime contains the new intake/output paths; their world integration remains unverified.
 
 Native 0.7.0 adds host-verified renewable-water intakes. Source tests verify a shared transfer budget, no persisted phantom tank, reverse-flow refusal and zero extraction into full/incompatible tanks. A real Horizon item-catalog fixture parses all four food definitions and verifies the tea effect, timing component data, bottle return and nutrition/saturation values. The XP-nugget action is compiled with the adapter but not exercised in a running game.
+
+Native 0.8.0 adds shared tank groups. Nine core tests cover complete/irregular/oversized structures, per-block save/reload conservation, metadata preservation, mixed/overfull legacy isolation, missing members, capacity/bucket atomicity, member-port routing above 8,000 mB, incompatible fluids and prevention of shared-tank pump loops. The native adapter gathers fresh endpoint state for each pump, validates every distribution before writes and stores only bounded member records. Full binary and embedded test configurations compile; group visuals and running-game interactions remain unverified.

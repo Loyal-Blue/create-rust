@@ -2,6 +2,11 @@ fn use_block(game: &mut crate::game::Game<'_>, hit: Option<&crate::game::Hit>) -
     crate::game::create_runtime::remember_hit(hit);
     if crate::game::create_runtime::use_create_item(game) {return core::ops::ControlFlow::Break(Ok(true));}
     if let Some(hit)=hit {
+        match crate::game::create_runtime::use_shared_tank(game,hit.pos) {
+            Ok(true)=>return core::ops::ControlFlow::Break(Ok(true)),
+            Err(e)=>return core::ops::ControlFlow::Break(Err(e)),
+            _=>{}
+        }
         match crate::game::create_runtime::use_depot(game,hit.pos) {
             Ok(true)=>return core::ops::ControlFlow::Break(Ok(true)),
             Err(e)=>return core::ops::ControlFlow::Break(Err(e)),

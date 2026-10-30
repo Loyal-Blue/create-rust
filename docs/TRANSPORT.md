@@ -1,4 +1,4 @@
-# Transport: content 0.8.0 / native 0.7.0
+# Transport: content 0.8.1 / native 0.8.0
 
 Flat belts carry the game's real dropped-item stacks. Power a side shaft port with a motor, shaft or geared drive; the shaft axis is perpendicular to travel. Adjacent, aligned belts share rotation. Reversing the source reverses travel; loss of power, drive conflicts and overstress stop belts. Belt load is a prototype 1 stress unit per RPM per segment. Ordinary, unowned items on a belt have their despawn timer reset, including while the belt is stopped. Players can still pick stacks up.
 

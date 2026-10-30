@@ -8,6 +8,12 @@ pub enum Node {
     Pipe,
     /// A host-verified renewable water intake; never a writable destination.
     SourceWater,
+    GroupPort {
+        capacity: u32,
+    },
+    Alias {
+        port: Pos,
+    },
     Port {
         single: bool,
     },
@@ -55,8 +61,13 @@ fn scan(nodes: &BTreeMap<Pos, Node>, start: Pos) -> Result<Vec<Pos>, Status> {
             return Err(Status::TooLarge);
         }
         match nodes.get(&p) {
-            Some(Node::Port { .. } | Node::SourceWater) => {
+            Some(Node::Port { .. } | Node::SourceWater | Node::GroupPort { .. }) => {
                 ports.insert(p);
+            }
+            Some(Node::Alias { port }) => {
+                if matches!(nodes.get(port), Some(Node::GroupPort { .. })) {
+                    ports.insert(*port);
+                }
             }
             Some(Node::Pipe) => {
                 for step in STEPS {
@@ -120,6 +131,18 @@ pub fn move_fluid(
     budget: u32,
     single: bool,
 ) -> Option<(MachineState, MachineState, u32)> {
+    move_with_capacity(source, dest, budget, single, TANK_CAPACITY)
+}
+fn move_with_capacity(
+    source: &MachineState,
+    dest: &MachineState,
+    budget: u32,
+    single: bool,
+    capacity: u32,
+) -> Option<(MachineState, MachineState, u32)> {
+    if capacity == 0 || capacity > super::tanks::MAX_BLOCKS as u32 * TANK_CAPACITY {
+        return None;
+    }
     let (id, _) = source
         .fluid_out
         .iter()
@@ -141,14 +164,19 @@ pub fn move_fluid(
         )
         .map(|v| u64::from(*v))
         .sum();
-    let room = u64::from(TANK_CAPACITY).saturating_sub(occupied);
+    let room = u64::from(capacity).saturating_sub(occupied);
     let amount = total.min(u64::from(budget)).min(room) as u32;
-    if !can_accept(dest, id, amount, single) {
+    if amount == 0 || (capacity == TANK_CAPACITY && !can_accept(dest, id, amount, single)) {
         return None;
     }
     let mut from = source.clone();
     let mut to = dest.clone();
-    if !from.extract_fluid(id, amount) || !to.insert_fluid(id, amount) {
+    let accepted = if capacity > TANK_CAPACITY {
+        super::tanks::fill(&mut to, capacity, id, amount)
+    } else {
+        to.insert_fluid(id, amount)
+    };
+    if !accepted || !from.extract_fluid(id, amount) {
         return None;
     }
     Some((from, to, amount))
@@ -200,8 +228,15 @@ pub fn flow(
             let (Some(source), Some(dest)) = (live.get(&from), live.get(to)) else {
                 continue;
             };
-            let single = matches!(nodes.get(to), Some(Node::Port { single: true }));
-            if let Some((a, b, n)) = move_fluid(source, dest, share, single) {
+            let single = matches!(
+                nodes.get(to),
+                Some(Node::Port { single: true } | Node::GroupPort { .. })
+            );
+            let capacity = match nodes.get(to) {
+                Some(Node::GroupPort { capacity }) => *capacity,
+                _ => TANK_CAPACITY,
+            };
+            if let Some((a, b, n)) = move_with_capacity(source, dest, share, single, capacity) {
                 live.insert(from, a);
                 live.insert(*to, b);
                 changed.insert(from);
@@ -402,5 +437,59 @@ mod source_tests {
             assert_eq!(result.amount, 0);
             assert!(result.states.is_empty());
         }
+    }
+}
+
+#[cfg(test)]
+mod shared_tests {
+    use super::super::kinetics::Axis;
+    use super::*;
+    #[test]
+    fn member_ports_route_shared_volumes_above_one_block_capacity() {
+        let nodes = BTreeMap::from([
+            ([-1, 0, 0], Node::Alias { port: [-1, 1, 0] }),
+            ([-1, 1, 0], Node::GroupPort { capacity: 16000 }),
+            ([1, 0, 0], Node::Alias { port: [1, 1, 0] }),
+            ([1, 1, 0], Node::GroupPort { capacity: 16000 }),
+        ]);
+        let mut source = MachineState::default();
+        source.fluid_in.insert("minecraft:water".into(), 15000);
+        let mut dest = MachineState::default();
+        dest.fluid_in.insert("minecraft:water".into(), 9000);
+        let states = BTreeMap::from([([-1, 1, 0], source), ([1, 1, 0], dest)]);
+        let u = flow(&nodes, &states, [0, 0, 0], Axis::X, 256.0, 0);
+        assert_eq!(u.amount, 1024);
+        assert_eq!(u.states[&[-1, 1, 0]].fluid_in["minecraft:water"], 13976);
+        assert_eq!(u.states[&[1, 1, 0]].fluid_in["minecraft:water"], 10024);
+    }
+    #[test]
+    fn different_members_of_the_same_tank_cannot_form_a_pump_loop() {
+        let nodes = BTreeMap::from([
+            ([-1, 0, 0], Node::Alias { port: [0, 1, 0] }),
+            ([1, 0, 0], Node::Alias { port: [0, 1, 0] }),
+            ([0, 1, 0], Node::GroupPort { capacity: 32000 }),
+        ]);
+        let result = flow(&nodes, &BTreeMap::new(), [0, 0, 0], Axis::X, 32.0, 0);
+        assert_eq!(result.status, Status::ConnectedLoop);
+        assert!(result.states.is_empty());
+    }
+    #[test]
+    fn a_shared_group_never_accepts_an_incompatible_fluid() {
+        let nodes = BTreeMap::from([
+            ([-1, 0, 0], Node::SourceWater),
+            ([1, 0, 0], Node::GroupPort { capacity: 16000 }),
+        ]);
+        let mut tank = MachineState::default();
+        tank.fluid_in.insert("minecraft:lava".into(), 9000);
+        let result = flow(
+            &nodes,
+            &BTreeMap::from([([1, 0, 0], tank)]),
+            [0, 0, 0],
+            Axis::X,
+            256.0,
+            0,
+        );
+        assert_eq!(result.amount, 0);
+        assert!(result.states.is_empty());
     }
 }

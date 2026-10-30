@@ -1,4 +1,4 @@
-# Item behavior: content 0.8.0 / native 0.7.0
+# Item behavior: content 0.8.1 / native 0.8.0
 
 These are authored port values, not verified replicas of the Java mod’s values.
 

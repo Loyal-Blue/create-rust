@@ -478,6 +478,7 @@ mod tests;
 
 pub mod fluids;
 pub mod surface;
+pub mod tanks;
 pub mod transport;
 pub mod trees;
 pub mod worldgen;
