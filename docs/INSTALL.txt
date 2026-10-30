@@ -1,4 +1,4 @@
-Create Rust experimental build: content 0.5.0 + native support 0.3.0
+Create Rust experimental build: content 0.5.1 + native support 0.3.1
 
 Put this .hmod in horizon-mods/ and create-preview-support.hnmod in horizon-native-mods/ for the SAME instance. Replace old copies. Set mod.create:true and mod.create_preview_support:true in horizon-mods.txt. Build through Native Mods -> Build, then launch that build and restart fully after updates.
 
@@ -7,3 +7,5 @@ Both files are required for machinery. The .hmod alone supplies static content. 
 Create is on creative inventory page 2. Wrench rotates; sneak reverses. Empty-hand motor clicks cycle speed; sneak reverses drive. Machine inputs are the top row, outputs the middle row. See repository README and docs/FUNCTIONAL_SCOPE.md for machinery arrangements and limitations.
 
 This is not a complete Create port. No in-game validation has been performed for this expanded build.
+
+Machine inputs go in the top row; outputs appear in the middle row. The machine's own inputs take priority over a depot/basin underneath. Empty-hand motor clicks cycle speed; mixers need at least 32 RPM. Status and progress appear above the machine inventory. At 16 RPM an iron sheet takes about 2.5 seconds. Replace and rebuild native support on server and clients together; this patch uses rotation snapshot protocol v2.

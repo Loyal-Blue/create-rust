@@ -168,11 +168,7 @@ impl InventoryPlan {
 }
 fn aggregate(slots: &[Option<Stack>], range: std::ops::Range<usize>) -> BTreeMap<String, u32> {
     let mut map = BTreeMap::new();
-    for s in slots[range]
-        .iter()
-        .flatten()
-        .filter(|s| s.components.is_empty())
-    {
+    for s in slots[range].iter().flatten() {
         *map.entry(s.id.clone()).or_default() += s.count;
     }
     map
@@ -202,13 +198,11 @@ fn insert(slots: &mut [Option<Stack>], stack: &Stack, limit: impl Fn(&str) -> u3
     }
     left == 0
 }
-/// Rebuild only the consumed plain inputs; componentful stacks are never recipe ingredients.
+/// Preserve components on every surviving input, including retained recipe catalysts.
 fn consume(slots: &mut [Option<Stack>], remaining: &BTreeMap<String, u32>) {
     let mut remaining = remaining.clone();
     for slot in slots {
-        if let Some(s) = slot
-            && s.components.is_empty()
-        {
+        if let Some(s) = slot {
             let n = remaining.entry(s.id.clone()).or_default();
             let keep = s.count.min(*n);
             *n -= keep;
@@ -277,6 +271,11 @@ pub fn process_with_catalog(
     machine.rng = state.rng;
     machine.heat = heat;
     let mut result = machine.tick_with(rpm, recipes);
+    // Fall back using the original state, so a press recipe's progress is not
+    // reset by a failed compacting match on every tick over a basin.
+    if result == TickResult::Idle && station == "compacting" {
+        return process_with_catalog(state, slots, "pressing", rpm, heat, recipes, limit);
+    }
     let mut next = state.clone();
     let mut after = slots.to_vec();
     if result == TickResult::Completed {
@@ -455,3 +454,48 @@ pub fn container_size(block: &str) -> Option<usize> {
 mod tests;
 
 pub mod worldgen;
+
+/// A received rotation phase advanced by elapsed local time, independent of
+/// periodic corrections to the client's world clock. Heartbeats arrive at 5 ticks;
+/// stop predicting after 10 ticks rather than spin forever after a disconnect.
+#[derive(Clone, Copy, Debug)]
+pub struct RotationSample {
+    pub angle: f32,
+    pub rpm: f32,
+}
+impl RotationSample {
+    pub fn capture(state: &MachineState, server_tick: u64) -> Self {
+        Self {
+            angle: state.render_angle(server_tick, 0.0),
+            rpm: state.rpm,
+        }
+    }
+    pub fn angle_after(&self, seconds: f64) -> f32 {
+        let seconds = if seconds.is_finite() {
+            seconds.clamp(0.0, 0.5)
+        } else {
+            0.0
+        };
+        (f64::from(self.angle) + seconds * f64::from(self.rpm) * 6.0).rem_euclid(360.0) as f32
+    }
+}
+/// The local machine inventory takes precedence over an external depot/basin.
+pub fn has_inputs(slots: &[Option<Stack>]) -> bool {
+    slots.iter().take(INPUT.end).flatten().any(|s| s.count > 0)
+}
+/// Visible reasons a processing machine can be waiting.
+pub fn status_label(state: &MachineState) -> &'static str {
+    match state.status.as_str() {
+        "Working" => "Processing",
+        "Completed" => "Finished",
+        "OutputBlocked" => "Output full",
+        "NoPower" | "Unpowered" => "Needs rotation",
+        "TooSlow" => "Needs 32+ RPM",
+        "Cold" => "Needs burner heat",
+        "NoMedium" => "Needs water/fire/lava",
+        "Idle" => "No matching recipe",
+        "Overstressed" => "Overstressed",
+        "Conflict" | "Conflicting" | "Jammed" => "Conflicting drives",
+        _ => "Ready",
+    }
+}

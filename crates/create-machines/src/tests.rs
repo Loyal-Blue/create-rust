@@ -45,20 +45,15 @@ fn stale_inventory_cannot_commit() {
     assert_eq!(slots, before);
 }
 #[test]
-fn component_inputs_are_preserved() {
+fn component_inputs_process_and_surviving_items_keep_metadata() {
     let mut slots = press();
     slots[0].as_mut().unwrap().components = "{custom:1}".into();
-    let u = process(
-        &MachineState::default(),
-        &slots,
-        "pressing",
-        256.,
-        Heat::None,
-        |_| 64,
-    )
-    .unwrap();
-    assert_eq!(u.result, TickResult::Idle);
-    assert_eq!(u.inventory.after, slots);
+    let u = finish(&MachineState::default(), &slots, |_| 64);
+    assert_eq!(u.result, TickResult::Completed);
+    let left = u.inventory.after[0].as_ref().unwrap();
+    assert_eq!(left.count, 2);
+    assert_eq!(left.components, "{custom:1}");
+    assert_eq!(u.inventory.after[9], stack("create:iron_sheet", 1));
 }
 #[test]
 fn full_output_preserves_inputs_and_rng() {
@@ -178,4 +173,61 @@ fn configured_motor_speed_is_validated_when_loading() {
     assert!(MachineState::decode("{\"motor_rpm\":257}").is_err());
     assert!(MachineState::decode("{\"motor_rpm\":-1}").is_err());
     assert_eq!(MachineState::decode("{}").unwrap().motor_rpm, 16.0);
+}
+
+#[test]
+fn waterwheel_speed_press_finishes_within_five_seconds() {
+    let mut state = MachineState::default();
+    let slots = press();
+    for tick in 1..=100 {
+        let update = process(&state, &slots, "pressing", 8.0, Heat::None, |_| 64).unwrap();
+        state = MachineState::decode(&update.state.encode()).unwrap();
+        if update.result == TickResult::Completed {
+            assert_eq!(tick, 100);
+            assert_eq!(update.inventory.after[9], stack("create:iron_sheet", 1));
+            return;
+        }
+    }
+    panic!("waterwheel-powered press did not finish");
+}
+#[test]
+fn local_inputs_and_progress_reasons_are_visible() {
+    assert!(has_inputs(&press()));
+    let mut slots = vec![None; 27];
+    slots[9] = stack("create:iron_sheet", 1);
+    assert!(!has_inputs(&slots));
+    let state = MachineState {
+        status: "TooSlow".into(),
+        ..Default::default()
+    };
+    assert_eq!(status_label(&state), "Needs 32+ RPM");
+}
+#[test]
+fn rotation_uses_elapsed_time_and_is_continuous_across_packets() {
+    let mut state = MachineState::default();
+    state.set_speed(64.0, 100);
+    let first = RotationSample::capture(&state, 100);
+    assert!((first.angle_after(0.125) - 48.0).abs() < 0.001);
+    let second = RotationSample::capture(&state, 105);
+    assert!((first.angle_after(0.25) - second.angle_after(0.0)).abs() < 0.001);
+    assert_eq!(first.angle_after(100.0), first.angle_after(0.5));
+    state.set_speed(0.0, 105);
+    let stopped = RotationSample::capture(&state, 105);
+    assert_eq!(stopped.angle_after(0.0), stopped.angle_after(0.25));
+}
+
+#[test]
+fn press_over_basin_falls_back_without_resetting_progress() {
+    let mut state = MachineState::default();
+    let mut slots = press();
+    for _ in 0..100 {
+        let u = process(&state, &slots, "compacting", 16.0, Heat::None, |_| 64).unwrap();
+        state = MachineState::decode(&u.state.encode()).unwrap();
+        slots = u.inventory.after;
+        if u.result == TickResult::Completed {
+            assert_eq!(slots[9], stack("create:iron_sheet", 1));
+            return;
+        }
+    }
+    panic!("pressing fallback reset its progress");
 }

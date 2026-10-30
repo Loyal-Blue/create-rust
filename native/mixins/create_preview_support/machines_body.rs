@@ -15,6 +15,67 @@ struct MachineBatch {
     dirty: std::collections::BTreeSet<(i32, i32)>,
 }
 thread_local! {static BATCH:std::cell::RefCell<Option<MachineBatch>>=const{std::cell::RefCell::new(None)};}
+// Network snapshots are cached, so drawing a shaft does not parse chunk JSON
+// every frame. Each snapshot carries its server tick; local elapsed time drives
+// the visual phase even when SetTime adjusts the client's world clock.
+struct ClientSample {
+    name: String,
+    state: machines::MachineState,
+    rotation: machines::RotationSample,
+    received: std::time::Instant,
+}
+#[derive(Default)]
+struct ClientMachines {
+    context: Option<(std::path::PathBuf, String, usize)>,
+    values: BTreeMap<MachinePos, ClientSample>,
+}
+thread_local! {
+    static CLIENT_MACHINES: std::cell::RefCell<ClientMachines> = Default::default();
+    static MENU_TARGET: Cell<Option<MachinePos>> = const { Cell::new(None) };
+}
+fn client_context(game: &Game<'_>) -> (std::path::PathBuf, String, usize) {
+    (
+        game.save.root.clone(),
+        format!("{:?}", game.dim),
+        &game.world as *const _ as usize,
+    )
+}
+fn cached_machine(game: &Game<'_>, p: MachinePos) -> Option<machines::MachineState> {
+    if !game.native_window() && game.remote.is_none() {
+        return None;
+    }
+    CLIENT_MACHINES.with(|cache| {
+        let cache = cache.borrow();
+        if cache.context.as_ref() != Some(&client_context(game)) {
+            return None;
+        }
+        let v = cache.values.get(&p)?;
+        (v.name == machine_name(game, p)).then(|| v.state.clone())
+    })
+}
+fn rotation_angle(game: &Game<'_>, p: MachinePos, alpha: f32) -> f32 {
+    if let Some(angle) = CLIENT_MACHINES.with(|cache| {
+        let cache = cache.borrow();
+        if cache.context.as_ref() != Some(&client_context(game)) {
+            return None;
+        }
+        let v = cache.values.get(&p)?;
+        (v.name == machine_name(game, p))
+            .then(|| v.rotation.angle_after(v.received.elapsed().as_secs_f64()))
+    }) {
+        return angle;
+    }
+    read_machine(game, p).render_angle(game.world.game_time.max(0) as u64, alpha)
+}
+pub(super) fn remember_menu_target(game: &Game<'_>, target: Option<[i32; 3]>) {
+    MENU_TARGET.with(|t| {
+        t.set(
+            target
+                .map(|p| (p[0], p[1], p[2]))
+                .filter(|p| machine_name(game, *p).starts_with("create:")),
+        )
+    });
+}
 fn begin_machine_batch(game: &Game<'_>) {
     let mut chunks = BTreeMap::new();
     for &key in game.world.chunks.keys() {
@@ -73,6 +134,9 @@ fn records(game: &Game<'_>, key: (i32, i32)) -> Vec<MachineRecord> {
         .unwrap_or_default()
 }
 fn read_machine(game: &Game<'_>, p: MachinePos) -> machines::MachineState {
+    if let Some(state) = cached_machine(game, p) {
+        return state;
+    }
     let name = machine_name(game, p);
     if let Some(data) = BATCH.with(|b| {
         b.borrow()
@@ -308,9 +372,6 @@ fn all_create(game: &Game<'_>) -> Vec<(MachinePos, String)> {
         out
     })
 }
-fn process_at(game: &mut Game<'_>, p: MachinePos, station: &str, rpm: f32, heat: machines::Heat) {
-    process_with_fluid_owner(game, p, p, station, rpm, heat)
-}
 fn process_with_fluid_owner(
     game: &mut Game<'_>,
     p: MachinePos,
@@ -318,14 +379,14 @@ fn process_with_fluid_owner(
     station: &str,
     rpm: f32,
     heat: machines::Heat,
-) {
+) -> Option<machines::TickResult> {
     ensure_machine(game, p);
     let before = match game.world.block_entities.get(&p) {
         Some(e) => e.slots().to_vec(),
-        None => return,
+        None => return None,
     };
     if before.len() < 18 {
-        return;
+        return None;
     }
     let mut state = read_machine(game, owner);
     state.set_speed(rpm, game.world.game_time.max(0) as u64);
@@ -333,20 +394,25 @@ fn process_with_fluid_owner(
     let catalog: Vec<_> = recipes::catalog::recipes()
         .iter()
         .filter(|r| {
-            r.station == station
+            (r.station == station || (station == "compacting" && r.station == "pressing"))
                 && r.products
                     .iter()
                     .all(|p| p.fluid || game.res.items().get(p.id).is_some())
         })
         .copied()
         .collect();
-    let Ok(update) =
+    let Ok(mut update) =
         machines::process_with_catalog(&state, &input, station, rpm, heat, &catalog, |id| {
             game.res.items().get(id).map_or(1, |i| i.max_stack)
         })
     else {
-        return;
+        return None;
     };
+    if update.result == machines::TickResult::NoPower
+        && matches!(state.status.as_str(), "Overstressed" | "Conflict")
+    {
+        update.state.status = state.status.clone();
+    }
     if update
         .inventory
         .after
@@ -354,14 +420,14 @@ fn process_with_fluid_owner(
         .flatten()
         .any(|s| game.res.items().get(&s.id).is_none())
     {
-        return;
+        return None;
     }
     let Some(after) = restore(&update.inventory.after, &before) else {
-        return;
+        return None;
     };
     if let Some(entity) = game.world.block_entities.get_mut(&p) {
         if portable(entity.slots()) != update.inventory.before {
-            return;
+            return None;
         }
         let changed = entity.slots() != after;
         entity.slots_mut().clone_from_slice(&after);
@@ -369,7 +435,9 @@ fn process_with_fluid_owner(
             dirty_machine(game, p);
         }
     }
+    let result = update.result;
     store_machine(game, owner, update.state);
+    Some(result)
 }
 fn heat_at(game: &Game<'_>, p: MachinePos, tick: u64) -> machines::Heat {
     for dy in [1, 2, 3] {
@@ -491,13 +559,18 @@ fn pump_fluids(game: &mut Game<'_>, p: MachinePos, axis: transmission::Axis, rpm
 fn broadcast_machine_state(game: &Game<'_>, values: &[MachineRecord], notice: &str) {
     if let Some(lan) = &game.lan {
         for batch in values.chunks(128) {
-            if let Ok(data) = serde_json::to_vec(&(1u32, format!("{:?}", game.dim), batch, notice))
-            {
+            if let Ok(data) = serde_json::to_vec(&(
+                2u32,
+                format!("{:?}", game.dim),
+                game.world.game_time.max(0) as u64,
+                batch,
+                notice,
+            )) {
                 if data.len() < 1_000_000 {
                     lan.hub.broadcast_level(
                         &horizon_protocol::packets::play::Clientbound::CustomPayload(
                             horizon_protocol::packets::configuration::CustomPayload {
-                                channel: "create:machines_v1".into(),
+                                channel: "create:machines_v2".into(),
                                 data,
                             },
                         ),
@@ -514,29 +587,47 @@ pub(super) fn receive_machines(
     let horizon_protocol::packets::play::Clientbound::CustomPayload(payload) = packet else {
         return false;
     };
-    if payload.channel != "create:machines_v1" {
+    if payload.channel != "create:machines_v2" {
         return false;
     }
     if payload.data.len() > 1_000_000 {
         return true;
     }
-    if let Ok((version, dim, values, notice)) =
-        serde_json::from_slice::<(u32, String, Vec<MachineRecord>, String)>(&payload.data)
+    if let Ok((version, dim, server_tick, values, notice)) =
+        serde_json::from_slice::<(u32, String, u64, Vec<MachineRecord>, String)>(&payload.data)
     {
-        if version != 1 || dim != format!("{:?}", game.dim) || values.len() > 128 {
+        if version != 2 || dim != format!("{:?}", game.dim) || values.len() > 128 {
             return true;
         }
-        for r in values {
-            if !r.name.starts_with("create:")
-                || machines::MachineState::decode(&r.data.encode()).is_err()
-            {
-                continue;
+        CLIENT_MACHINES.with(|cache| {
+            let mut cache = cache.borrow_mut();
+            let context = client_context(game);
+            if cache.context.as_ref() != Some(&context) {
+                cache.context = Some(context);
+                cache.values.clear();
             }
-            let p = (r.pos[0], r.pos[1], r.pos[2]);
-            if machine_name(game, p) == r.name {
-                store_machine(game, p, r.data);
+            cache.values.retain(|p, _| game.world.loaded(p.0, p.2));
+            for r in values {
+                if !r.name.starts_with("create:")
+                    || machines::MachineState::decode(&r.data.encode()).is_err()
+                {
+                    continue;
+                }
+                let p = (r.pos[0], r.pos[1], r.pos[2]);
+                if machine_name(game, p) == r.name {
+                    let rotation = machines::RotationSample::capture(&r.data, server_tick);
+                    cache.values.insert(
+                        p,
+                        ClientSample {
+                            name: r.name,
+                            state: r.data,
+                            rotation,
+                            received: std::time::Instant::now(),
+                        },
+                    );
+                }
             }
-        }
+        });
         if !notice.is_empty() && notice.len() < 512 {
             game.native_chat(&notice);
         }
@@ -547,10 +638,14 @@ pub(super) fn tick_machines(game: &mut Game<'_>) {
     if game.native_window() || game.remote.is_some() || game.title.is_some() {
         return;
     }
-    thread_local! {static LAST:std::cell::RefCell<BTreeMap<std::path::PathBuf,i64>>=const{std::cell::RefCell::new(BTreeMap::new())};}
+    thread_local! {static LAST:std::cell::RefCell<BTreeMap<(std::path::PathBuf,String),i64>>=const{std::cell::RefCell::new(BTreeMap::new())};}
     let tick = game.world.game_time.max(0) as u64;
-    let duplicate = LAST
-        .with(|m| m.borrow_mut().insert(game.save.root.clone(), tick as i64) == Some(tick as i64));
+    let duplicate = LAST.with(|m| {
+        m.borrow_mut().insert(
+            (game.save.root.clone(), format!("{:?}", game.dim)),
+            tick as i64,
+        ) == Some(tick as i64)
+    });
     if duplicate {
         return;
     }
@@ -671,13 +766,23 @@ pub(super) fn tick_machines(game: &mut Game<'_>) {
                     "minecraft:lava" => "blasting",
                     "minecraft:fire" => "smoking",
                     "minecraft:soul_fire" => "haunting",
-                    _ => continue,
+                    _ => {
+                        let mut state = read_machine(game, *p);
+                        state.status = "NoMedium".into();
+                        store_machine(game, *p, state);
+                        continue;
+                    }
                 };
             }
             if matches!(
                 name.as_str(),
                 "create:mechanical_press" | "create:mechanical_mixer"
-            ) {
+            ) && !game
+                .world
+                .block_entities
+                .get(p)
+                .is_some_and(|e| machines::has_inputs(&portable(e.slots())))
+            {
                 for dy in [1, 2] {
                     let candidate = (p.0, p.1 - dy, p.2);
                     if matches!(
@@ -695,12 +800,39 @@ pub(super) fn tick_machines(game: &mut Game<'_>) {
                 }
             }
             let heat = heat_at(game, target, tick);
-            if name == "create:spout" && machine_name(game, below) == "create:depot" {
-                process_with_fluid_owner(game, below, *p, station, rpm, heat);
+            if name == "create:spout"
+                && machine_name(game, below) == "create:depot"
+                && !game
+                    .world
+                    .block_entities
+                    .get(p)
+                    .is_some_and(|e| machines::has_inputs(&portable(e.slots())))
+            {
+                let _ = process_with_fluid_owner(game, below, *p, station, rpm, heat);
             } else {
-                process_at(game, target, station, rpm, heat);
+                let owner = if target == *p && name == "create:mechanical_mixer" {
+                    [1, 2]
+                        .into_iter()
+                        .map(|dy| (p.0, p.1 - dy, p.2))
+                        .find(|q| machine_name(game, *q) == "create:basin")
+                        .unwrap_or(target)
+                } else {
+                    target
+                };
+                let _ = process_with_fluid_owner(game, target, owner, station, rpm, heat);
+                if owner != *p {
+                    let progress = read_machine(game, owner);
+                    let mut controller = read_machine(game, *p);
+                    controller.progress = progress.progress;
+                    controller.recipe = progress.recipe;
+                    if !matches!(controller.status.as_str(), "Overstressed" | "Conflict") {
+                        controller.status = progress.status;
+                    }
+                    store_machine(game, *p, controller);
+                }
             }
         }
+
         if name == "create:mechanical_drill" && rpm != 0.0 {
             let mut data = read_machine(game, *p);
             data.progress = (data.progress + (rpm.abs() / 32.0).clamp(0.03125, 8.0)).min(20.0);
@@ -746,17 +878,36 @@ pub(super) fn tick_machines(game: &mut Game<'_>) {
             move_item(game, *p, below);
         }
     }
-    if tick.is_multiple_of(5) {
-        let values: Vec<_> = positions
-            .iter()
-            .map(|(p, name)| MachineRecord {
-                pos: [p.0, p.1, p.2],
-                name: name.clone(),
-                data: read_machine(game, *p),
+    thread_local! { static SENT: std::cell::RefCell<BTreeMap<(std::path::PathBuf,String),BTreeMap<MachinePos,String>>>=const { std::cell::RefCell::new(BTreeMap::new()) }; }
+    let values: Vec<_> = positions
+        .iter()
+        .map(|(p, name)| MachineRecord {
+            pos: [p.0, p.1, p.2],
+            name: name.clone(),
+            data: read_machine(game, *p),
+        })
+        .collect();
+    let changed = SENT.with(|sent| {
+        let mut sent = sent.borrow_mut();
+        let old = sent
+            .entry((game.save.root.clone(), format!("{:?}", game.dim)))
+            .or_default();
+        let mut live = std::collections::BTreeSet::new();
+        let updates = values
+            .into_iter()
+            .filter(|r| {
+                let p = (r.pos[0], r.pos[1], r.pos[2]);
+                live.insert(p);
+                let value = format!("{}:{}", r.name, r.data.encode());
+                let changed = old.get(&p) != Some(&value);
+                old.insert(p, value);
+                changed || tick.is_multiple_of(5)
             })
-            .collect();
-        broadcast_machine_state(game, &values, "");
-    }
+            .collect::<Vec<_>>();
+        old.retain(|p, _| live.contains(p));
+        updates
+    });
+    broadcast_machine_state(game, &changed, "");
     finish_machine_batch(game);
 }
 pub(super) fn clear_removed_machines(game: &mut Game<'_>) {
@@ -930,24 +1081,51 @@ pub(super) fn use_machine(game: &mut Game<'_>, p: [i32; 3]) -> Result<bool> {
     Ok(false)
 }
 pub(super) fn draw_machine_status(game: &mut Game<'_>, batch: &mut HudBatch) {
-    let Some(pos) = game.container else { return };
+    let Some(mut pos) = game.container else {
+        return;
+    };
+    if !machine_name(game, pos).starts_with("create:") && game.remote.is_some() {
+        let Some(target) = MENU_TARGET.with(Cell::get) else {
+            return;
+        };
+        pos = target;
+    }
     let name = machine_name(game, pos);
     if !name.starts_with("create:") {
         return;
     }
     let s = read_machine(game, pos);
+    let percent = s
+        .recipe
+        .as_deref()
+        .and_then(|id| recipes::catalog::recipes().iter().find(|r| r.id == id))
+        .map_or(0.0, |r| {
+            (s.progress / r.work.max(1) as f32 * 100.0).clamp(0.0, 100.0)
+        });
     let (x, y) = game.inventory_origin(batch);
     batch.fill(
         &game.gui.atlas,
         x,
-        y - 30.0,
+        y - 42.0,
         176.0,
-        27.0,
+        39.0,
         rgba(25, 25, 25, 230),
     );
     batch.text(
         &game.gui.atlas,
-        &format!("{:.0} RPM | {}", s.rpm, s.status),
+        &format!("{:.0} RPM | {}", s.rpm, machines::status_label(&s)),
+        x + 4.0,
+        y - 38.0,
+        u32::MAX,
+        false,
+    );
+    batch.text(
+        &game.gui.atlas,
+        &format!(
+            "Work {:.0}% | Fluid {} mB",
+            percent,
+            s.fluid_in.values().chain(s.fluid_out.values()).sum::<u32>()
+        ),
         x + 4.0,
         y - 26.0,
         u32::MAX,
@@ -955,11 +1133,7 @@ pub(super) fn draw_machine_status(game: &mut Game<'_>, batch: &mut HudBatch) {
     );
     batch.text(
         &game.gui.atlas,
-        &format!(
-            "Work {:.0} | Fluid {} mB",
-            s.progress,
-            s.fluid_in.values().chain(s.fluid_out.values()).sum::<u32>()
-        ),
+        "Inputs: top | Outputs: middle",
         x + 4.0,
         y - 14.0,
         u32::MAX,

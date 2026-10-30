@@ -263,7 +263,7 @@ impl Machine {
             return TickResult::Cold;
         }
         self.progress =
-            (self.progress + (rpm.abs() / 32.0).clamp(0.03125, 8.0)).min(recipe.work.max(1) as f32);
+            (self.progress + (rpm.abs() / 8.0).clamp(0.125, 32.0)).min(recipe.work.max(1) as f32);
         if self.progress < recipe.work.max(1) as f32 {
             return TickResult::Working;
         }

@@ -1,4 +1,4 @@
-# Functional scope: native 0.3.0
+# Functional scope: native 0.3.1
 
 These are implemented code paths, not claims of in-game validation or exact Java parity.
 
@@ -16,8 +16,8 @@ These are implemented code paths, not claims of in-game validation or exact Java
 | Mechanical saw | Container cutting recipes | Tree felling and world saw damage |
 | Mechanical drill | Breaks a breakable non-Create block ahead with ordinary drops | Original hardness timing, machine mining, moving contraption use |
 | Encased fan | Own-inventory splashing/blasting/smoking/haunting selected by adjacent water/lava/fire/soul fire | Air streams, entity pushing and dropped-item processing |
-| Deployer | Container deploying recipes and retained catalysts | Player-like block/entity interactions and world arm animation |
-| Basin, depot | Persistent 27-slot storage; shared processing targets | Original single-item rendering, basin geometry/fluid display |
+| Deployer | Container deploying recipes; retained catalysts preserve damage/components | Player-like block/entity interactions and world arm animation |
+| Basin, depot | Persistent 27-slot storage; external processing when machine input row is empty | Original single-item rendering, basin geometry/fluid display |
 | Blaze burner | Coal/charcoal/blaze-rod heat; blaze-cake superheat | Capturing blazes, original heat transitions and visuals |
 | Fluid tank | Persistent fluid input/output stores, 8,000 mB capacity each | Multiblock merging, original visuals and capacity rules |
 | Fluid pipe, mechanical pump | Signed RPM moves fluids through straight runs up to 16 pipes | Branches, valves, water-source extraction, original pump drive topology |

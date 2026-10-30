@@ -258,7 +258,6 @@ struct Cache {
         ),
     >,
     network: Network,
-    last_time: f64,
 }
 fn dynamic(name: &str) -> bool {
     matches!(
@@ -403,14 +402,6 @@ pub(super) fn draw_rotation(
         return;
     };
     refresh(game, &mut cache);
-    let time = game.world.game_time as f64 + alpha;
-    let dt = if time >= cache.last_time {
-        (time - cache.last_time).min(20.0) / 20.0
-    } else {
-        0.0
-    };
-    cache.last_time = time;
-    let _ = dt;
     for (&pos, node) in &cache.network.nodes {
         let at =
             glam::DVec3::new(pos.0 as f64 + 0.5, pos.1 as f64 + 0.5, pos.2 as f64 + 0.5) - camera;
@@ -437,9 +428,7 @@ pub(super) fn draw_rotation(
                 Axis::Y => glam::Vec3::Y,
                 Axis::Z => glam::Vec3::Z,
             },
-            read_machine(game, (pos.0, pos.1, pos.2))
-                .render_angle(game.world.game_time.max(0) as u64, alpha as f32)
-                .to_radians(),
+            rotation_angle(game, (pos.0, pos.1, pos.2), alpha as f32).to_radians(),
         );
         let orientation = match node.axis {
             Axis::Y => glam::Mat4::IDENTITY,

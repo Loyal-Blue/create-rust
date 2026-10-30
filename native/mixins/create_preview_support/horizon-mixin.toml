@@ -1,6 +1,6 @@
 [mod]
 id = "create_preview_support"
-version = "0.3.0"
+version = "0.3.1"
 priority = 100
 
 [compatibility]
@@ -198,4 +198,13 @@ bindings = [
  { name = "containers", ty = "&crate::game::machines::Containers<'_>", value = "self" },
  { name = "view", ty = "&crate::game::machines::View", value = "view" },
  { name = "slot", ty = "usize", value = "slot" },
+]
+
+[[injection]]
+id = "remote_menu_target"
+target = "horizon_client::game::remote::Game<'_>::remote_open_screen"
+kind = "HEAD"
+helper = "remote_menu.rs"
+bindings = [
+ { name = "game", ty = "&crate::game::Game<'_>", value = "&*self" },
 ]

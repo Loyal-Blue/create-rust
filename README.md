@@ -2,7 +2,7 @@
 
 An independent, unfinished Create-style mod for Horizon Minecraft 26.3. Not affiliated with the Create Team or Horizon.
 
-## Current build: content 0.5.0 + native support 0.3.0
+## Current build: content 0.5.1 + native support 0.3.1
 
 This build connects machinery to server ticks, real inventory slots, chunk saves and client rotation updates. It includes 36 blocks and 36 standalone items. It is an experimental machinery baseline, not a complete port of Create. No running-game verification has been performed.
 
@@ -14,6 +14,12 @@ This build connects machinery to server ticks, real inventory slots, chunk saves
 - Machine progress, fuel, fluids, RPM and phase saved with chunks; existing container storage saves the items. Server snapshots drive client rotation.
 
 See [functional scope](docs/FUNCTIONAL_SCOPE.md) for per-system behavior and gaps. Belts, contraptions, trains, full world deployer/saw behavior, multiblock tanks and exact Create GUIs are still absent. The 338-entry recipe catalogue is broader than the installed content; unavailable outputs are filtered before processing.
+
+## Fixes in native 0.3.1
+
+Machine-owned inputs now take priority over a depot/basin underneath. A press over a basin can also press a single ingot when no compacting recipe matches. Mixers can use their own item inputs with fluid from the basin below. Ingredient item IDs match even when stacks carry component data; surviving inputs and retained tools keep their components.
+
+Rotation changes send on the next machine tick, with full snapshots every five ticks. Clients cache the snapshots and advance phase using elapsed local time instead of the periodically corrected world clock. Remote container status now follows the clicked machine and shows RPM, recipe progress, missing power/heat, insufficient mixer speed or a full output row. Prototype recipe work runs four times faster: an iron sheet takes about 2.5 seconds at 16 RPM or 5 seconds at 8 RPM, at 20 ticks/second.
 
 ## Installation and controls
 
