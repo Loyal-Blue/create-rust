@@ -1,0 +1,118 @@
+[mod]
+id = "create_preview_support"
+version = "0.2.0"
+priority = 100
+
+[compatibility]
+horizon_revision = "47a3b39fa9e419ec03221fca5ef402d58e831f14"
+
+[[module]]
+id = "shapes_and_tab"
+file = "crates/horizon-client/src/mod_content.rs"
+name = "create_preview_support"
+source = "support.rs"
+visibility = "pub"
+
+[[injection]]
+id = "prepare_content"
+target = "horizon_client::mod_content::resource_root"
+kind = "HEAD"
+cancellable = true
+helper = "prepare.rs"
+bindings = [
+  { name = "base", ty = "&std::path::Path", value = "base" },
+  { name = "mods", ty = "&[crate::mod_content::ContentMod]", value = "mods" },
+  { name = "cache", ty = "&std::path::Path", value = "cache" },
+]
+
+[[injection]]
+id = "create_tab_position"
+target = "horizon_client::creative::Creative::tab_position"
+kind = "HEAD"
+cancellable = true
+helper = "tab_position.rs"
+bindings = [{ name = "tab", ty = "&crate::creative::Tab", value = "tab" }]
+
+[[module]]
+id = "runtime"
+file = "crates/horizon-client/src/game.rs"
+name = "create_runtime"
+source = "runtime.rs"
+
+[[injection]]
+id = "migrate_states"
+target = "horizon_world::registry::BlockRegistry::resolve"
+kind = "HEAD"
+cancellable = true
+helper = "migrate.rs"
+bindings = [
+ { name = "registry", ty = "&crate::registry::BlockRegistry", value = "self" },
+ { name = "descriptor", ty = "&crate::chunk::BlockState", value = "descriptor" },
+]
+
+[[injection]]
+id = "place"
+target = "horizon_client::game::block_items::Game<'_>::apply_item_block_state"
+kind = "HEAD"
+cancellable = true
+helper = "placement.rs"
+bindings = [
+ { name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" },
+ { name = "pos", ty = "[i32;3]", value = "pos" },
+ { name = "state", ty = "horizon_world::registry::BlockStateId", value = "state" },
+ { name = "stack", ty = "&horizon_client::items::ItemStack", value = "stack" },
+]
+
+[[injection]]
+id = "use_wrench"
+target = "horizon_client::game::Game<'_>::use_hand"
+kind = "HEAD"
+cancellable = true
+helper = "use.rs"
+bindings = [
+ { name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" },
+ { name = "hit", ty = "Option<&crate::game::Hit>", value = "block_hit" },
+]
+
+[[injection]]
+id = "rotation_mesh"
+target = "horizon_client::game::Game<'_>::entity_geometry"
+kind = "HEAD"
+helper = "render.rs"
+bindings = [
+ { name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" },
+ { name = "camera", ty = "glam::DVec3", value = "camera" },
+ { name = "alpha", ty = "f64", value = "alpha" },
+ { name = "out", ty = "&mut Vec<horizon_client::mesher::Vertex>", value = "&mut out" },
+]
+
+[[injection]]
+id = "page_controls"
+target = "horizon_client::game::Game<'_>::draw_carried"
+kind = "HEAD"
+helper = "pages_draw.rs"
+bindings = [
+ { name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" },
+ { name = "batch", ty = "&mut horizon_client::hud::HudBatch", value = "batch" },
+]
+
+[[injection]]
+id = "page_click"
+target = "horizon_client::game::Game<'_>::click_creative"
+kind = "HEAD"
+cancellable = true
+helper = "pages_click.rs"
+bindings = [
+ { name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" },
+ { name = "right", ty = "bool", value = "right" },
+]
+
+[[injection]]
+id = "selected_page"
+target = "horizon_client::creative::Creative::select"
+kind = "HEAD"
+helper = "page_select.rs"
+bindings = [
+ { name = "screen", ty = "&crate::creative::Creative", value = "&*self" },
+ { name = "tab", ty = "usize", value = "tab" },
+]

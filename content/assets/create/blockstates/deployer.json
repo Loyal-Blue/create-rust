@@ -1,0 +1,1 @@
+{"variants": {"facing=south": {"model": "create:item/deployer"}, "facing=north": {"model": "create:item/deployer", "y": 180}, "facing=east": {"model": "create:item/deployer", "y": 270}, "facing=west": {"model": "create:item/deployer", "y": 90}, "facing=up": {"model": "create:item/deployer", "x": 90}, "facing=down": {"model": "create:item/deployer", "x": 270}}}

@@ -1,0 +1,15 @@
+[package]
+name = "create-runtime"
+version = "0.3.0"
+edition.workspace = true
+license.workspace = true
+rust-version = "1.95"
+
+[dependencies]
+create-kinetics = { path = "../kinetics" }
+create-simulation = { path = "../simulation" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[lints]
+workspace = true

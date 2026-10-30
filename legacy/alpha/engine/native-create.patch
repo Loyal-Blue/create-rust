@@ -1,0 +1,1102 @@
+diff --git a/Cargo.lock b/Cargo.lock
+index cf181cdfc..eb6693451 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -736,6 +736,24 @@ dependencies = [
+  "cfg-if",
+ ]
+ 
++[[package]]
++name = "create-kinetics"
++version = "0.2.0"
++
++[[package]]
++name = "create-runtime"
++version = "0.3.0"
++dependencies = [
++ "create-kinetics",
++ "create-simulation",
++ "serde",
++ "serde_json",
++]
++
++[[package]]
++name = "create-simulation"
++version = "0.2.0"
++
+ [[package]]
+ name = "crossbeam-utils"
+ version = "0.8.23"
+@@ -1378,6 +1396,7 @@ dependencies = [
+  "ab_glyph",
+  "bytemuck",
+  "chrono",
++ "create-runtime",
+  "flate2",
+  "gilrs",
+  "glam",
+@@ -1448,6 +1467,7 @@ dependencies = [
+  "bytemuck",
+  "chrono",
+  "cpal",
++ "create-runtime",
+  "flate2",
+  "glam",
+  "horizon-assets",
+diff --git a/Cargo.toml b/Cargo.toml
+index fe8f2ed17..1dd182802 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -1,6 +1,9 @@
+ [workspace]
+ exclude = ["launcher", "crates/horizon-telemetry-server", "crates/horizon-mod-registry", "third_party/wgpu-hal"]
+ members = [
++    "mods/create/kinetics",
++    "mods/create/simulation",
++    "mods/create/runtime",
+     "crates/horizon-core",
+     "crates/horizon-dualsense",
+     "crates/horizon-threads",
+diff --git a/crates/horizon-client-render/Cargo.toml b/crates/horizon-client-render/Cargo.toml
+index 75cf5ee85..0a2ff20de 100644
+--- a/crates/horizon-client-render/Cargo.toml
++++ b/crates/horizon-client-render/Cargo.toml
+@@ -7,6 +7,7 @@ rust-version = "1.90"
+ description = "The client's world data, rendering and screens: chunks, meshing, light, streaming, the renderer, the HUD, menus and settings; no gameplay"
+ 
+ [dependencies]
++create-runtime = { path = "../../mods/create/runtime", optional = true }
+ horizon-assets = { path = "../horizon-assets" }
+ horizon-bench = { path = "../horizon-bench" }
+ horizon-client-core = { path = "../horizon-client-core" }
+@@ -54,6 +55,7 @@ wgpu = { version = "30.0.1", default-features = false, features = ["dx12"] }
+ wgpu = { version = "30.0.1", default-features = false, features = ["gles"] }
+ 
+ [features]
++create = ["dep:create-runtime"]
+ # Sound output: horizon-client's `audio` feature.
+ audio = ["dep:cpal"]
+ # Helpers horizon-client's tests build their fixtures with.
+diff --git a/crates/horizon-client-render/src/chunk/block_entity.rs b/crates/horizon-client-render/src/chunk/block_entity.rs
+index 6dbd09e14..cd1136f1d 100644
+--- a/crates/horizon-client-render/src/chunk/block_entity.rs
++++ b/crates/horizon-client-render/src/chunk/block_entity.rs
+@@ -36,6 +36,8 @@ pub struct Furnace {
+ }
+ #[derive(Clone, Debug)]
+ pub enum BlockEntity {
++    /// Native mod state; real inventory slots are saved and networked by the host.
++    Modded(Box<ModContainer>),
+     Chest(Vec<Option<ItemStack>>),
+     Furnace(Furnace),
+     Brewing(Box<BrewingStand>),
+@@ -77,6 +79,12 @@ pub enum BlockEntity {
+     /// `ChiseledBookShelfBlockEntity`: a `Container` of six one-book slots.
+     ChiseledBookshelf(Box<ChiseledBookshelf>),
+ }
++#[derive(Clone, Debug)]
++pub struct ModContainer {
++    pub block: String,
++    pub items: Vec<Option<ItemStack>>,
++    pub data: String,
++}
+ /// `ChiseledBookShelfBlockEntity`: six slots and `lastInteractedSlot`.
+ #[derive(Clone, Debug, PartialEq)]
+ pub struct ChiseledBookshelf {
+diff --git a/crates/horizon-client-render/src/containers.rs b/crates/horizon-client-render/src/containers.rs
+index 7d788ef34..e6c0549ed 100644
+--- a/crates/horizon-client-render/src/containers.rs
++++ b/crates/horizon-client-render/src/containers.rs
+@@ -3,7 +3,7 @@
+ //! from the data-driven `context_int_provider`/`context_float_provider` files.
+ pub use crate::chunk::block_entity::{
+     Banner, Beacon, BlockEntity, Campfire, ChiseledBookshelf, Crafter, CreakingHeart, EndGateway,
+-    Furnace, FurnaceKind, Jukebox, Lectern, Skull, SkullSkin,
++    Furnace, FurnaceKind, Jukebox, Lectern, ModContainer, Skull, SkullSkin,
+ };
+ use crate::items::ItemStack;
+ use std::collections::HashMap;
+@@ -48,6 +48,7 @@ pub const HOPPER_SLOTS: usize = 5;
+ /// `ShulkerBoxBlockEntity`.
+ pub fn default_name_key(block: &str) -> Option<&'static str> {
+     Some(match block {
++        n if n.starts_with("create:") => "container.chest",
+         "minecraft:chest" | "minecraft:trapped_chest" => "container.chest",
+         n if n.ends_with("copper_chest") => "container.chest",
+         "minecraft:barrel" => "container.barrel",
+@@ -212,6 +213,14 @@ impl Crafter {
+ }
+ impl BlockEntity {
+     pub fn for_block(name: &str) -> Option<Self> {
++        #[cfg(feature = "create")]
++        if let Some(size) = create_runtime::container_size(name) {
++            return Some(Self::Modded(Box::new(ModContainer {
++                block: name.into(),
++                items: vec![None; size],
++                data: String::new(),
++            })));
++        }
+         if let Some(hanging) = crate::signs::sign_kind(name) {
+             return Some(Self::Sign(crate::signs::SignData {
+                 hanging,
+@@ -307,6 +316,7 @@ impl BlockEntity {
+     }
+     pub fn id(&self) -> &'static str {
+         match self {
++            Self::Modded(_) => "minecraft:chest", // protocol carrier, with native ID marker
+             Self::Chest(items) => match items.len() {
+                 HOPPER_SLOTS => "minecraft:hopper",
+                 9 => "minecraft:dispenser",
+@@ -341,6 +351,7 @@ impl BlockEntity {
+     pub fn contents(&self) -> Vec<ItemStack> {
+         match self {
+             Self::Chest(items) => items.iter().flatten().cloned().collect(),
++            Self::Modded(c) => c.items.iter().flatten().cloned().collect(),
+             Self::Furnace(f) => f.items.iter().flatten().cloned().collect(),
+             Self::Brewing(b) => b.items.iter().flatten().cloned().collect(),
+             Self::Sign(_) => Vec::new(),
+@@ -366,6 +377,7 @@ impl BlockEntity {
+     pub fn slots(&self) -> &[Option<ItemStack>] {
+         match self {
+             Self::Chest(items) => items,
++            Self::Modded(c) => &c.items,
+             Self::Furnace(f) => &f.items,
+             Self::Brewing(b) => &b.items,
+             Self::Sign(_)
+@@ -392,6 +404,7 @@ impl BlockEntity {
+     pub fn slots_mut(&mut self) -> &mut [Option<ItemStack>] {
+         match self {
+             Self::Chest(items) => items,
++            Self::Modded(c) => &mut c.items,
+             Self::Furnace(f) => &mut f.items,
+             Self::Brewing(b) => &mut b.items,
+             Self::Sign(_)
+diff --git a/crates/horizon-client/Cargo.toml b/crates/horizon-client/Cargo.toml
+index 23188fefc..3c008a290 100644
+--- a/crates/horizon-client/Cargo.toml
++++ b/crates/horizon-client/Cargo.toml
+@@ -8,6 +8,7 @@ rust-version = "1.90"
+ description = "Horizon native development client"
+ 
+ [dependencies]
++create-runtime = { path = "../../mods/create/runtime", optional = true }
+ horizon-assets = { path = "../horizon-assets" }
+ horizon-client-core = { path = "../horizon-client-core" }
+ horizon-client-input = { path = "../horizon-client-input" }
+@@ -85,6 +86,7 @@ wgpu = { version = "30.0.1", default-features = false, features = ["gles"] }
+ winresource = "0.1"
+ 
+ [features]
++create = ["dep:create-runtime", "horizon-client-render/create"]
+ default = ["audio", "controllers"]
+ # Sound output. Without it (and `controllers`) the program links neither libasound nor libudev on
+ # Linux: the server build (`--no-default-features`, released as horizon-engine; docs/server.md).
+diff --git a/crates/horizon-client/src/game.rs b/crates/horizon-client/src/game.rs
+index 094a9e04d..5bf9c889e 100644
+--- a/crates/horizon-client/src/game.rs
++++ b/crates/horizon-client/src/game.rs
+@@ -39,6 +39,8 @@ mod consume;
+ mod control;
+ mod copper_golems;
+ mod creaking;
++#[cfg(feature = "create")]
++mod create_native;
+ mod creative_hotbar;
+ mod creatures;
+ mod crossbow;
+@@ -768,6 +770,7 @@ impl GameLevel<'_> {
+         let key = (i32::MAX - 15, minecarts::CART_KEY_Y, cart.id as i32);
+         let slots = match self.world.block_entities.get(&key) {
+             Some(BlockEntity::Chest(open)) => open,
++            Some(BlockEntity::Modded(c)) => &c.items,
+             _ => &cart.items,
+         };
+         minecarts::Minecart::container_signal(slots, self.items)
+@@ -4301,6 +4304,13 @@ impl Game<'_> {
+     /// One hand's turn in `startUseItem`: `useItemOn` the block aimed at,
+     /// then `useItem`. Whether the click ends here (it acted or failed).
+     fn use_hand(&mut self, block_hit: Option<&Hit>) -> Result<bool> {
++        #[cfg(feature = "create")]
++        if let Some(hit) = block_hit
++            && self.use_create_native(hit.pos)
++        {
++            self.swing_arm();
++            return Ok(true);
++        }
+         // isSecondaryUseActive with something in either hand keeps blocks
+         // from reacting.
+         let sneaking = self.keys.contains(&KeyCode::ShiftLeft);
+@@ -5646,6 +5656,8 @@ impl Game<'_> {
+         }
+         if running {
+             horizon_client::spans::time("tick_block_entities", || self.tick_block_entities())?;
++            #[cfg(feature = "create")]
++            self.tick_create_native();
+             horizon_client::spans::time("tick_sculk_entities", || self.tick_sculk_entities());
+             horizon_client::spans::time("tick_sculk_blocks", || self.tick_sculk_blocks())?;
+         }
+@@ -6407,7 +6419,9 @@ impl Game<'_> {
+         }
+         let mut v: Vec<usize> = (0..36).collect();
+         match self.container_kind() {
+-            Some(BlockEntity::Chest(_)) => v.extend((0..self.container_size()).map(|i| 300 + i)),
++            Some(BlockEntity::Chest(_) | BlockEntity::Modded(_)) => {
++                v.extend((0..self.container_size()).map(|i| 300 + i))
++            }
+             Some(BlockEntity::Furnace(_)) => v.extend(300..303),
+             Some(BlockEntity::Brewing(_)) => v.extend(300..305),
+             Some(BlockEntity::Crafter(_)) => v.extend(300..310),
+@@ -6625,8 +6639,11 @@ impl Game<'_> {
+                 .container
+                 .and_then(|k| self.world.block_entities.get(&k))
+             {
+-                Some(BlockEntity::Chest(_)) if self.draw_machine_screen(batch, ox, oy) => {}
+-                Some(BlockEntity::Chest(_)) => self.draw_chest_screen(batch, ox, oy),
++                Some(BlockEntity::Chest(_) | BlockEntity::Modded(_))
++                    if self.draw_machine_screen(batch, ox, oy) => {}
++                Some(BlockEntity::Chest(_) | BlockEntity::Modded(_)) => {
++                    self.draw_chest_screen(batch, ox, oy)
++                }
+                 Some(BlockEntity::Furnace(f)) => {
+                     let (tex, key, fallback) = match f.kind {
+                         horizon_client::containers::FurnaceKind::Furnace => {
+@@ -7089,7 +7106,7 @@ impl Game<'_> {
+             let (kind, map) = if self.container.is_some() {
+                 let size = self.container_size();
+                 let (kind, count) = match self.container_kind() {
+-                    Some(BlockEntity::Chest(_)) => {
++                    Some(BlockEntity::Chest(_) | BlockEntity::Modded(_)) => {
+                         let shulker = self.container.is_some_and(|k| {
+                             let id = self.world.block(k.0, k.1, k.2);
+                             storage::is_shulker_box(&self.res.facts().get(id).name)
+@@ -8177,6 +8194,8 @@ impl Game<'_> {
+         }
+         // `ItemEntityRenderer`.
+         self.mark_entity(out.len(), "minecraft:item");
++        #[cfg(feature = "create")]
++        self.create_rotor_geometry(camera, alpha, &mut out);
+         self.dropped_item_geometry(camera, alpha, &mut out);
+         // `VaultRenderer`.
+         self.mark_entity(out.len(), "");
+diff --git a/crates/horizon-client/src/game/create_native.rs b/crates/horizon-client/src/game/create_native.rs
+new file mode 100644
+index 000000000..1821e0edf
+--- /dev/null
++++ b/crates/horizon-client/src/game/create_native.rs
+@@ -0,0 +1,589 @@
++//! Server-authoritative native machines. Items live only in BlockEntity slots.
++use super::{Game, Screen};
++use create_runtime::{
++    self as runtime, Heat, MachineState, Stack,
++    kinetics::{self, Kind},
++};
++use horizon_client::{containers::BlockEntity, item_data, items::ItemStack, snbt};
++use horizon_core::position::BlockPos;
++use std::collections::{BTreeMap, BTreeSet, VecDeque};
++use winit::keyboard::KeyCode;
++type Pos = (i32, i32, i32);
++fn portable(slots: &[Option<ItemStack>]) -> Vec<Option<Stack>> {
++    slots
++        .iter()
++        .map(|s| {
++            s.as_ref().map(|s| Stack {
++                id: s.item.to_string(),
++                count: s.count,
++                components: item_data::encode_components(s)
++                    .map(|t| snbt::to_snbt(&t))
++                    .unwrap_or_default(),
++            })
++        })
++        .collect()
++}
++fn restore(
++    slots: &[Option<Stack>],
++    originals: &[Option<ItemStack>],
++) -> Option<Vec<Option<ItemStack>>> {
++    let known = portable(originals);
++    slots
++        .iter()
++        .map(|slot| match slot {
++            None => Some(None),
++            Some(s) => {
++                if let Some(index) = known.iter().position(|o| {
++                    o.as_ref()
++                        .is_some_and(|o| o.id == s.id && o.components == s.components)
++                }) {
++                    let mut item = originals[index].clone()?;
++                    item.count = s.count;
++                    Some(Some(item))
++                } else if s.components.is_empty() {
++                    Some(Some(ItemStack {
++                        item: s.id.as_str().into(),
++                        count: s.count,
++                        damage: 0,
++                        extra: None,
++                    }))
++                } else {
++                    None
++                }
++            }
++        })
++        .collect()
++}
++fn array(p: Pos) -> [i32; 3] {
++    [p.0, p.1, p.2]
++}
++fn offset(p: Pos, d: [i32; 3]) -> Pos {
++    (p.0 + d[0], p.1 + d[1], p.2 + d[2])
++}
++const DIRECTIONS: [[i32; 3]; 6] = [
++    [-1, 0, 0],
++    [1, 0, 0],
++    [0, -1, 0],
++    [0, 1, 0],
++    [0, 0, -1],
++    [0, 0, 1],
++];
++impl Game<'_> {
++    fn create_state(&self, p: Pos) -> Option<MachineState> {
++        let BlockEntity::Modded(c) = self.world.block_entities.get(&p)? else {
++            return None;
++        };
++        MachineState::decode(&c.data).ok()
++    }
++    fn dirty_create(&mut self, p: Pos) {
++        self.world.modified.insert((p.0 >> 4, p.2 >> 4));
++        if let Some(log) = &mut self.world.block_log {
++            log.push(p);
++        }
++    }
++    fn save_create_state(&mut self, p: Pos, state: &MachineState) {
++        let data = state.encode();
++        if let Some(BlockEntity::Modded(c)) = self.world.block_entities.get_mut(&p)
++            && c.data != data
++        {
++            c.data = data;
++            self.dirty_create(p);
++        }
++    }
++    fn create_name(&self, p: Pos) -> &str {
++        self.pack
++            .assets
++            .registry
++            .state(self.world.block(p.0, p.1, p.2))
++            .map_or("", |s| s.name.as_str())
++    }
++    pub(super) fn tick_create_native(&mut self) {
++        if self.remote.is_some() {
++            return;
++        }
++        let tick = self.world.game_time.max(0) as u64;
++        let mut positions: Vec<_> = self
++            .world
++            .block_entities
++            .iter()
++            .filter_map(|(p, e)| matches!(e, BlockEntity::Modded(_)).then_some(*p))
++            .collect();
++        positions.sort_unstable();
++        let mut nodes = BTreeMap::new();
++        for &p in &positions {
++            if !self.world.loaded(p.0, p.2) {
++                continue;
++            }
++            let Some(state) = self
++                .pack
++                .assets
++                .registry
++                .state(self.world.block(p.0, p.1, p.2))
++            else {
++                continue;
++            };
++            let props = state
++                .properties
++                .iter()
++                .map(|(k, v)| format!("{k}={v}"))
++                .collect::<Vec<_>>()
++                .join(",");
++            let Some(mut node) = kinetics::state::parse_state(
++                &kinetics::state::Registry::new(),
++                &format!("{}[{props}]", state.name),
++            ) else {
++                continue;
++            };
++            let Some(saved) = self.create_state(p) else {
++                continue;
++            };
++            node.direction = saved.direction;
++            match node.kind {
++                Kind::HandCrank => node.active = saved.crank_until > tick,
++                Kind::WaterWheel | Kind::LargeWaterWheel => {
++                    node.active = DIRECTIONS.into_iter().any(|d| {
++                        d[node.axis.index()] == 0
++                            && self.create_name(offset(p, d)) == "minecraft:water"
++                    });
++                }
++                Kind::Clutch | Kind::Gearshift => {
++                    let powered = self.with_level(|b, level, ticks| {
++                        b.has_neighbor_signal(level, ticks, BlockPos::new(p.0, p.1, p.2))
++                    });
++                    if node.kind == Kind::Clutch {
++                        node.active = saved.engaged && !powered;
++                    } else if powered {
++                        node.direction = -node.direction;
++                    }
++                }
++                _ => {}
++            }
++            nodes.insert(array(p), node);
++        }
++        let solved = kinetics::solve(&nodes);
++        for &p in &positions {
++            let Some(mut state) = self.create_state(p) else {
++                continue;
++            };
++            let rpm = solved.speeds.get(&array(p)).copied().unwrap_or(0.);
++            state.set_speed(rpm, tick);
++            if let Some(n) = solved
++                .network_of
++                .get(&array(p))
++                .and_then(|n| solved.networks.get(*n))
++            {
++                state.capacity = n.capacity;
++                state.stress = n.stress;
++                state.status = format!("{:?}", n.state);
++            }
++            self.save_create_state(p, &state);
++            let name = self.create_name(p).to_owned();
++            if let Some(station) = runtime::station(&name) {
++                let mut target = p;
++                let mut station = station;
++                if matches!(
++                    name.as_str(),
++                    "create:mechanical_press" | "create:mechanical_mixer"
++                ) {
++                    for depth in 1..=2 {
++                        let below = (p.0, p.1 - depth, p.2);
++                        if matches!(self.create_name(below), "create:basin" | "create:depot") {
++                            target = below;
++                            break;
++                        }
++                    }
++                    if name == "create:mechanical_press"
++                        && self.create_name(target) == "create:basin"
++                    {
++                        station = "compacting";
++                    }
++                }
++                let heat = self.create_heat((target.0, target.1 - 1, target.2), tick);
++                let speed = if matches!(name.as_str(), "create:spout" | "create:item_drain") {
++                    64.
++                } else {
++                    rpm
++                };
++                self.process_create_machine(target, station, speed, heat);
++            }
++        }
++        self.tick_create_pumps(&positions, &nodes, &solved);
++        if tick.is_multiple_of(8) {
++            self.tick_create_chutes(&positions);
++        }
++    }
++    fn create_heat(&self, p: Pos, tick: u64) -> Heat {
++        if let Some(state) = self.create_state(p) {
++            if state.superheat_until > tick {
++                return Heat::Superheated;
++            }
++            if state.burn_until > tick {
++                return Heat::Heated;
++            }
++        }
++        if matches!(
++            self.create_name(p),
++            "minecraft:lava" | "minecraft:fire" | "minecraft:campfire"
++        ) {
++            Heat::Heated
++        } else {
++            Heat::None
++        }
++    }
++    fn process_create_machine(&mut self, p: Pos, station: &str, rpm: f32, heat: Heat) {
++        let Some(state) = self.create_state(p) else {
++            return;
++        };
++        let Some(BlockEntity::Modded(c)) = self.world.block_entities.get(&p) else {
++            return;
++        };
++        let originals = c.items.clone();
++        let slots = portable(&originals);
++        let Ok(update) = runtime::process(&state, &slots, station, rpm, heat, |id| {
++            self.res.items().get(id).map_or(1, |i| i.max_stack)
++        }) else {
++            return;
++        };
++        // A recipe whose output is not installed cannot create an invalid host item.
++        if update
++            .inventory
++            .after
++            .iter()
++            .flatten()
++            .any(|s| self.res.items().get(&s.id).is_none())
++        {
++            return;
++        }
++        let Some(after) = restore(&update.inventory.after, &originals) else {
++            return;
++        };
++        if let Some(BlockEntity::Modded(c)) = self.world.block_entities.get_mut(&p)
++            && portable(&c.items) == update.inventory.before
++        {
++            let changed = c.items != after;
++            c.items = after;
++            if changed {
++                self.dirty_create(p);
++            }
++            self.save_create_state(p, &update.state);
++        }
++    }
++    fn tick_create_chutes(&mut self, positions: &[Pos]) {
++        for &p in positions {
++            if self.create_name(p) != "create:chute" {
++                continue;
++            }
++            let target = (p.0, p.1 - 1, p.2);
++            let Some(from) = self
++                .world
++                .block_entities
++                .get(&p)
++                .map(|e| e.slots().to_vec())
++            else {
++                continue;
++            };
++            let Some(to) = self
++                .world
++                .block_entities
++                .get(&target)
++                .map(|e| e.slots().to_vec())
++            else {
++                continue;
++            };
++            if from.is_empty() || to.is_empty() {
++                continue;
++            }
++            let mut to_slots = portable(&to);
++            let processing = runtime::station(self.create_name(target)).is_some()
++                || self.create_name(target) == "create:basin";
++            let end = if processing {
++                9.min(to_slots.len())
++            } else {
++                to_slots.len()
++            };
++            let Some((a, b)) = runtime::transfer(&portable(&from), &to_slots[..end], 1, |id| {
++                self.res.items().get(id).map_or(64, |i| i.max_stack)
++            }) else {
++                continue;
++            };
++            to_slots[..end].clone_from_slice(&b.after);
++            let mut originals = from.clone();
++            originals.extend(to.clone());
++            let (Some(after_from), Some(after_to)) = (
++                restore(&a.after, &originals),
++                restore(&to_slots, &originals),
++            ) else {
++                continue;
++            };
++            // Both snapshots must still match before either container is changed.
++            if self
++                .world
++                .block_entities
++                .get(&p)
++                .is_none_or(|e| e.slots() != from)
++                || self
++                    .world
++                    .block_entities
++                    .get(&target)
++                    .is_none_or(|e| e.slots() != to)
++            {
++                continue;
++            }
++            self.world
++                .block_entities
++                .get_mut(&p)
++                .unwrap()
++                .slots_mut()
++                .clone_from_slice(&after_from);
++            self.world
++                .block_entities
++                .get_mut(&target)
++                .unwrap()
++                .slots_mut()
++                .clone_from_slice(&after_to);
++            self.dirty_create(p);
++            self.dirty_create(target);
++        }
++    }
++    fn create_fluid_endpoints(&self, start: Pos, excluded: Pos) -> Vec<Pos> {
++        let mut queue = VecDeque::from([(start, 0)]);
++        let mut seen = BTreeSet::from([excluded]);
++        let mut out = Vec::new();
++        while let Some((p, depth)) = queue.pop_front() {
++            if depth > 16 || !seen.insert(p) || !self.world.loaded(p.0, p.2) {
++                continue;
++            }
++            match self.create_name(p) {
++                "create:fluid_tank" | "create:basin" | "create:spout" | "create:item_drain" => {
++                    out.push(p)
++                }
++                "create:fluid_pipe" => {
++                    for d in DIRECTIONS {
++                        queue.push_back((offset(p, d), depth + 1));
++                    }
++                }
++                _ => {}
++            }
++        }
++        out.sort_unstable();
++        out
++    }
++    fn tick_create_pumps(
++        &mut self,
++        positions: &[Pos],
++        nodes: &BTreeMap<[i32; 3], kinetics::Node>,
++        solved: &kinetics::Solution,
++    ) {
++        for &p in positions {
++            if self.create_name(p) != "create:mechanical_pump" {
++                continue;
++            }
++            let rpm = solved.speeds.get(&array(p)).copied().unwrap_or(0.);
++            if rpm == 0. {
++                continue;
++            }
++            let Some(node) = nodes.get(&array(p)) else {
++                continue;
++            };
++            let mut d = [0; 3];
++            d[node.axis.index()] = if rpm > 0. { 1 } else { -1 };
++            let sources = self.create_fluid_endpoints(offset(p, d.map(|n| -n)), p);
++            let targets = self.create_fluid_endpoints(offset(p, d), p);
++            // One total budget per pump per tick, not per pair of tanks.
++            let mut budget = rpm.abs().clamp(1., 256.) as u32;
++            for source in &sources {
++                for target in &targets {
++                    if budget == 0 || source == target {
++                        continue;
++                    }
++                    let (Some(from), Some(to)) =
++                        (self.create_state(*source), self.create_state(*target))
++                    else {
++                        continue;
++                    };
++                    if let Some((from, to, amount)) = runtime::transfer_fluid(&from, &to, budget) {
++                        self.save_create_state(*source, &from);
++                        self.save_create_state(*target, &to);
++                        budget -= amount;
++                    }
++                }
++            }
++        }
++    }
++    pub(super) fn use_create_native(&mut self, pos: [i32; 3]) -> bool {
++        if self.remote.is_some() {
++            return false;
++        }
++        let p = (pos[0], pos[1], pos[2]);
++        let name = self.create_name(p).to_owned();
++        if !name.starts_with("create:") {
++            return false;
++        }
++        let Some(mut state) = self.create_state(p) else {
++            return false;
++        };
++        let tick = self.world.game_time.max(0) as u64;
++        let held = self.held().cloned();
++        let sneaking = self.keys.contains(&KeyCode::ShiftLeft);
++        if name == "create:hand_crank" {
++            state.crank_until = tick + 20;
++            if sneaking {
++                state.direction = -state.direction;
++            }
++            self.save_create_state(p, &state);
++            return true;
++        }
++        if held.as_ref().is_some_and(|s| &*s.item == "create:wrench") {
++            if name == "create:clutch" {
++                state.engaged = !state.engaged;
++            } else {
++                state.direction = -state.direction;
++            }
++            self.save_create_state(p, &state);
++            return true;
++        }
++        if name == "create:blaze_burner"
++            && let Some(held) = &held
++        {
++            let duration = match &*held.item {
++                "minecraft:coal" | "minecraft:charcoal" => 1600,
++                "minecraft:blaze_rod" => 2400,
++                "create:blaze_cake" => 3200,
++                _ => 0,
++            };
++            if duration > 0 {
++                state.burn_until = tick + duration;
++                if &*held.item == "create:blaze_cake" {
++                    state.superheat_until = tick + duration;
++                }
++                self.consume_held();
++                self.save_create_state(p, &state);
++                return true;
++            }
++        }
++        if matches!(
++            name.as_str(),
++            "create:fluid_tank" | "create:basin" | "create:spout" | "create:item_drain"
++        ) && let Some(held) = held
++        {
++            let fluid = match &*held.item {
++                "minecraft:water_bucket" => Some("minecraft:water"),
++                "minecraft:lava_bucket" => Some("minecraft:lava"),
++                "create:honey_bucket" => Some("create:honey"),
++                "create:chocolate_bucket" => Some("create:chocolate"),
++                _ => None,
++            };
++            let remainder = if let Some(fluid) = fluid {
++                state
++                    .insert_fluid(fluid, 1000)
++                    .then_some("minecraft:bucket")
++            } else if &*held.item == "minecraft:bucket" {
++                [
++                    ("minecraft:water", "minecraft:water_bucket"),
++                    ("minecraft:lava", "minecraft:lava_bucket"),
++                    ("create:honey", "create:honey_bucket"),
++                    ("create:chocolate", "create:chocolate_bucket"),
++                ]
++                .into_iter()
++                .find_map(|(fluid, bucket)| state.extract_fluid(fluid, 1000).then_some(bucket))
++            } else {
++                None
++            };
++            if let Some(remainder) = remainder {
++                if !self.creative {
++                    self.consume_held();
++                    let bucket = ItemStack {
++                        item: remainder.into(),
++                        count: 1,
++                        damage: 0,
++                        extra: None,
++                    };
++                    if let Some(left) = self.give(bucket) {
++                        self.player_drop(left);
++                    }
++                }
++                self.save_create_state(p, &state);
++                return true;
++            }
++        }
++        if !sneaking
++            && self
++                .world
++                .block_entities
++                .get(&p)
++                .is_some_and(|e| !e.slots().is_empty())
++        {
++            self.container = Some(p);
++            self.screen = Screen::Inventory;
++            return true;
++        }
++        false
++    }
++}
++
++impl Game<'_> {
++    pub(super) fn create_rotor_geometry(
++        &self,
++        camera: glam::DVec3,
++        partial: f64,
++        out: &mut Vec<horizon_client::mesher::Vertex>,
++    ) {
++        use glam::Mat4;
++        use horizon_assets::item_model::DisplayContext;
++        use horizon_client::block_entity_render::vertex_light;
++        for (p, entity) in self.world.block_entities.iter() {
++            let BlockEntity::Modded(c) = entity else {
++                continue;
++            };
++            if !matches!(
++                c.block.as_str(),
++                "create:shaft"
++                    | "create:cogwheel"
++                    | "create:large_cogwheel"
++                    | "create:water_wheel"
++                    | "create:large_water_wheel"
++                    | "create:hand_crank"
++            ) {
++                continue;
++            }
++            let position =
++                glam::DVec3::new(p.0 as f64 + 0.5, p.1 as f64 + 0.5, p.2 as f64 + 0.5) - camera;
++            if position.length_squared() > 4096. {
++                continue;
++            }
++            let Ok(saved) = MachineState::decode(&c.data) else {
++                continue;
++            };
++            let axis = self
++                .pack
++                .assets
++                .registry
++                .state(self.world.block(p.0, p.1, p.2))
++                .and_then(|s| s.properties.get("axis"))
++                .map(String::as_str)
++                .unwrap_or("y");
++            let orient = match axis {
++                "x" => Mat4::from_rotation_z(-std::f32::consts::FRAC_PI_2),
++                "z" => Mat4::from_rotation_x(std::f32::consts::FRAC_PI_2),
++                _ => Mat4::IDENTITY,
++            };
++            let angle = saved
++                .render_angle(self.world.game_time.max(0) as u64, partial as f32)
++                .to_radians();
++            let model = self.resolve_item(
++                &ItemStack::new(c.block.as_str(), 1),
++                DisplayContext::None,
++                None,
++                0,
++            );
++            let pose =
++                Mat4::from_translation(position.as_vec3()) * orient * Mat4::from_rotation_y(angle);
++            self.submit_item_world(
++                &model,
++                pose,
++                vertex_light(self.world.light(p.0, p.1, p.2)),
++                out,
++            );
++        }
++    }
++}
+diff --git a/crates/horizon-client/src/game/lan_actions.rs b/crates/horizon-client/src/game/lan_actions.rs
+index 5329d9fc6..0c10a0c62 100644
+--- a/crates/horizon-client/src/game/lan_actions.rs
++++ b/crates/horizon-client/src/game/lan_actions.rs
+@@ -859,10 +859,10 @@ impl Game<'_> {
+             };
+             ("minecraft:generic_9x6", halves)
+         } else {
+-            let Some(BlockEntity::Chest(items)) = self.world.block_entities.get(&pos) else {
++            let Some(entity) = self.world.block_entities.get(&pos) else {
+                 return false;
+             };
+-            let menu = match items.len() {
++            let menu = match entity.slots().len() {
+                 27 => "minecraft:generic_9x3",
+                 9 => "minecraft:generic_3x3",
+                 5 => "minecraft:hopper",
+diff --git a/crates/horizon-client/src/game/machines.rs b/crates/horizon-client/src/game/machines.rs
+index d220f7070..393518dde 100644
+--- a/crates/horizon-client/src/game/machines.rs
++++ b/crates/horizon-client/src/game/machines.rs
+@@ -33,6 +33,7 @@ impl Default for HopperState {
+ 
+ #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+ enum Kind {
++    CreateMachine,
+     Generic,
+     /// `AbstractFurnaceBlockEntity` (a `WorldlyContainer`).
+     Furnace,
+@@ -70,6 +71,8 @@ impl View {
+     /// `WorldlyContainer.getSlotsForFace` or every slot.
+     fn slots_for_face(&self, face: Option<Direction>) -> Vec<usize> {
+         match (self.kind, face) {
++            (Kind::CreateMachine, Some(Direction::Down)) => (9..18).collect(),
++            (Kind::CreateMachine, _) => (0..9).collect(),
+             (Kind::Furnace, Some(Direction::Down)) => vec![2, 1],
+             (Kind::Furnace, Some(Direction::Up)) => vec![0],
+             (Kind::Furnace, Some(_)) => vec![1],
+@@ -158,6 +161,11 @@ impl Containers<'_> {
+             return None;
+         }
+         let kind = match (entity, name) {
++            (BlockEntity::Modded(c), _)
++                if c.items.len() >= 18 && create_processing_block(&c.block) =>
++            {
++                Kind::CreateMachine
++            }
+             (BlockEntity::Furnace(_), _) => Kind::Furnace,
+             (BlockEntity::Crafter(_), _) => Kind::Crafter,
+             (BlockEntity::Brewing(_), _) => Kind::Brewing,
+@@ -230,6 +238,9 @@ impl Containers<'_> {
+     }
+     /// `Container.canPlaceItem` (+ `canPlaceItemThroughFace` for furnaces).
+     fn can_place(&self, view: &View, slot: usize, stack: &ItemStack) -> bool {
++        if view.kind == Kind::CreateMachine {
++            return slot < 9;
++        }
+         if view.kind == Kind::Crafter {
+             return match self.world.block_entities.get(&view.parts[0].0) {
+                 Some(BlockEntity::Crafter(c)) => {
+@@ -289,6 +300,9 @@ impl Containers<'_> {
+     }
+     /// `canTakeItemThroughFace` (furnaces and brewing stands restrict it).
+     fn can_take(&self, view: &View, slot: usize, stack: &ItemStack, face: Direction) -> bool {
++        if view.kind == Kind::CreateMachine {
++            return (9..18).contains(&slot);
++        }
+         if let Kind::Composter(level) = view.kind {
+             // OutputContainer.canTakeItemThroughFace.
+             return level == 8 && face == Direction::Down && &*stack.item == "minecraft:bone_meal";
+@@ -1289,3 +1303,19 @@ mod item_column_tests {
+         assert!(skipped > 1000, "skipped only {skipped}");
+     }
+ }
++
++fn create_processing_block(block: &str) -> bool {
++    matches!(
++        block,
++        "create:millstone"
++            | "create:mechanical_press"
++            | "create:mechanical_mixer"
++            | "create:mechanical_saw"
++            | "create:crushing_wheel"
++            | "create:deployer"
++            | "create:encased_fan"
++            | "create:spout"
++            | "create:item_drain"
++            | "create:basin"
++    )
++}
+diff --git a/crates/horizon-client/src/game/storage.rs b/crates/horizon-client/src/game/storage.rs
+index e7a66d69d..5cf49cbd2 100644
+--- a/crates/horizon-client/src/game/storage.rs
++++ b/crates/horizon-client/src/game/storage.rs
+@@ -366,12 +366,15 @@ impl Game<'_> {
+         if let Some((rows, _)) = self.remote_chest_menu() {
+             return Some(rows);
+         }
+-        if !matches!(self.container_kind()?, BlockEntity::Chest(_)) {
++        if !matches!(
++            self.container_kind()?,
++            BlockEntity::Chest(_) | BlockEntity::Modded(_)
++        ) {
+             return None;
+         }
+         let generic = match self.container_block().as_deref() {
+             Some("minecraft:barrel" | "minecraft:ender_chest") => true,
+-            Some(n) if is_chest_block(n) => true,
++            Some(n) if is_chest_block(n) || n.starts_with("create:") => true,
+             _ => self.open_cart_kind() == Some(super::minecarts::CartKind::Chest),
+         };
+         generic.then(|| self.container_size() / 9)
+diff --git a/crates/horizon-client/src/lan/chunks.rs b/crates/horizon-client/src/lan/chunks.rs
+index b93197dc0..73fa76bc1 100644
+--- a/crates/horizon-client/src/lan/chunks.rs
++++ b/crates/horizon-client/src/lan/chunks.rs
+@@ -30,6 +30,10 @@ const ENTITY: u8 = 4;
+ 
+ /// The vanilla block entity type of a block (BlockEntityType.validBlocks).
+ pub fn block_entity_type(name: &str) -> Option<&'static str> {
++    #[cfg(feature = "create")]
++    if create_runtime::container_size(name).is_some() {
++        return Some("minecraft:chest");
++    }
+     let n = name.strip_prefix("minecraft:")?;
+     Some(match n {
+         "chest" => "minecraft:chest",
+@@ -938,6 +942,11 @@ fn java_hash_order<T>(items: &mut Vec<T>, pos: impl Fn(&T) -> (i32, i32, i32)) {
+ /// The update tag of a block entity (getUpdateTag) for what the client shows.
+ pub fn entity_tag(entity: &BlockEntity) -> Option<Tag> {
+     match entity {
++        BlockEntity::Modded(c) => Some(Tag::compound([
++            ("HorizonCreateBlock", Tag::String(c.block.as_str().into())),
++            ("HorizonModData", Tag::String(c.data.as_str().into())),
++            ("Items", crate::save::encode_items(&c.items)),
++        ])),
+         BlockEntity::Sign(sign) => Some(Tag::compound(sign.encode())),
+         BlockEntity::Spawner(s) => Some(s.update_tag()),
+         // BannerBlockEntity.getUpdateTag: saveWithoutMetadata, so the patterns,
+diff --git a/crates/horizon-client/src/save.rs b/crates/horizon-client/src/save.rs
+index fc89e52b0..c20c985b8 100644
+--- a/crates/horizon-client/src/save.rs
++++ b/crates/horizon-client/src/save.rs
+@@ -408,6 +408,7 @@ pub use horizon_items::item_nbt::{
+ /// is a chest, trapped chest or barrel).
+ fn block_entity_id(e: &crate::containers::BlockEntity, block: &str) -> String {
+     match (e, block) {
++        (crate::containers::BlockEntity::Modded(c), _) => c.block.clone(),
+         (
+             crate::containers::BlockEntity::Chest(_),
+             "minecraft:trapped_chest" | "minecraft:barrel" | "minecraft:dropper",
+@@ -438,6 +439,11 @@ pub fn encode_block_entity(
+     ];
+     match e {
+         BlockEntity::Chest(items) => entries.push(("Items", encode_items(items))),
++        BlockEntity::Modded(c) => {
++            entries.push(("Items", encode_items(&c.items)));
++            entries.push(("HorizonModData", string(&c.data)));
++            entries.push(("HorizonCreateBlock", string(&c.block)));
++        }
+         BlockEntity::Furnace(f) => {
+             entries.push(("Items", encode_items(&f.items)));
+             entries.push(("lit_time_remaining", Tag::Int(f.lit_remaining)));
+@@ -614,7 +620,9 @@ pub fn decode_end_gateway(tag: &Tag) -> crate::containers::EndGateway {
+ pub fn decode_block_entity(tag: &Tag) -> Option<((i32, i32, i32), crate::containers::BlockEntity)> {
+     use crate::containers::BlockEntity;
+     let int = |k: &str| number(tag.get(k)).map(|v| v as i32);
+-    let id = text(tag.get("id"))?;
++    let id = text(tag.get("HorizonCreateBlock"))
++        .filter(|id| id.starts_with("create:"))
++        .or_else(|| text(tag.get("id")))?;
+     let pos = (int("x")?, int("y")?, int("z")?);
+     if id == "minecraft:end_gateway" {
+         return Some((pos, BlockEntity::EndGateway(decode_end_gateway(tag))));
+@@ -679,6 +687,10 @@ pub fn decode_block_entity(tag: &Tag) -> Option<((i32, i32, i32), crate::contain
+     let mut entity = BlockEntity::for_block(block)?;
+     match &mut entity {
+         BlockEntity::Chest(items) => *items = decode_items(tag.get("Items"), items.len()),
++        BlockEntity::Modded(c) => {
++            c.items = decode_items(tag.get("Items"), c.items.len());
++            c.data = text(tag.get("HorizonModData")).unwrap_or_default();
++        }
+         BlockEntity::Furnace(f) => {
+             let items = decode_items(tag.get("Items"), 3);
+             f.items = [items[0].clone(), items[1].clone(), items[2].clone()];
+@@ -3894,6 +3906,41 @@ impl<G: ChunkGenerator> ChunkGenerator for Persistent<G> {
+ 
+ #[cfg(test)]
+ mod tests {
++    #[cfg(feature = "create")]
++    #[test]
++    fn create_machine_slots_and_native_data_roundtrip() {
++        use crate::{containers::BlockEntity, items::ItemStack};
++        let mut entity = BlockEntity::for_block("create:mechanical_press").unwrap();
++        if let BlockEntity::Modded(c) = &mut entity {
++            c.items[0] = Some(ItemStack::new("minecraft:iron_ingot", 7));
++            c.items[9] = Some(ItemStack::new("create:iron_sheet", 3));
++            c.data = "{\"version\":1,\"progress\":42.5}".into();
++        } else {
++            panic!("native factory did not run");
++        }
++        let encoded = super::encode_block_entity((12, 64, -3), &entity, "create:mechanical_press");
++        let (pos, decoded) = super::decode_block_entity(&encoded).unwrap();
++        assert_eq!(pos, (12, 64, -3));
++        let (BlockEntity::Modded(before), BlockEntity::Modded(after)) = (entity, decoded) else {
++            panic!("lost native entity");
++        };
++        assert_eq!(before.block, after.block);
++        assert_eq!(before.items, after.items);
++        assert_eq!(before.data, after.data);
++        // A network chest carrier retains the native ID through its marker.
++        let mut wire =
++            super::encode_block_entity(pos, &BlockEntity::Modded(after), "create:mechanical_press");
++        if let horizon_world::nbt::Tag::Compound(c) = &mut wire {
++            c.insert(
++                "id".into(),
++                horizon_world::nbt::Tag::String("minecraft:chest".into()),
++            );
++        }
++        assert!(matches!(
++            super::decode_block_entity(&wire).unwrap().1,
++            BlockEntity::Modded(_)
++        ));
++    }
+     use crate::mobs::spawner::SpawnDataExt;
+ 
+     #[test]

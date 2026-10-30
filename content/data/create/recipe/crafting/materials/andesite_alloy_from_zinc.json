@@ -1,0 +1,16 @@
+{
+  "category": "misc",
+  "key": {
+    "A": "minecraft:andesite",
+    "B": "#c:nuggets/zinc"
+  },
+  "pattern": [
+    "BA",
+    "AB"
+  ],
+  "result": {
+    "count": 1,
+    "id": "create:andesite_alloy"
+  },
+  "type": "minecraft:crafting_shaped"
+}

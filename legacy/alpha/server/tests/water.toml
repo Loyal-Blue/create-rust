@@ -1,0 +1,14 @@
+[[step]]
+join="Castiel"
+player={game-mode="creative"}
+blocks=[{x=0,y=64,z=0,state="create:water_wheel[axis=x]"},{x=1,y=64,z=0,state="create:shaft[axis=x]"},{x=0,y=63,z=0,state="minecraft:water[level=0]"}]
+command="kinetics scan 0 64 0 1"
+[[step]]
+ticks=1
+command="kinetics info 1 64 0"
+expect.feedback="shaft [x axis] at 1 64 0: 8 RPM; Running; stress 0/256 SU; 2 blocks"
+[[step]]
+blocks=[{x=0,y=63,z=0,state="minecraft:air"}]
+ticks=1
+command="kinetics info 1 64 0"
+expect.feedback="shaft [x axis] at 1 64 0: 0 RPM; Idle; stress 0/0 SU; 2 blocks"

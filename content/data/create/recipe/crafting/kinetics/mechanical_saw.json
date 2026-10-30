@@ -1,0 +1,18 @@
+{
+  "category": "misc",
+  "key": {
+    "A": "#c:plates/iron",
+    "C": "create:andesite_casing",
+    "I": "#c:ingots/iron"
+  },
+  "pattern": [
+    " A ",
+    "AIA",
+    " C "
+  ],
+  "result": {
+    "count": 1,
+    "id": "create:mechanical_saw"
+  },
+  "type": "minecraft:crafting_shaped"
+}

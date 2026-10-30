@@ -1,0 +1,33 @@
+[mod]
+id = "create_preview_support"
+version = "0.1.0"
+priority = 100
+
+[compatibility]
+horizon_revision = "47a3b39fa9e419ec03221fca5ef402d58e831f14"
+
+[[module]]
+id = "shapes_and_tab"
+file = "crates/horizon-client/src/mod_content.rs"
+name = "create_preview_support"
+source = "support.rs"
+
+[[injection]]
+id = "prepare_content"
+target = "horizon_client::mod_content::resource_root"
+kind = "HEAD"
+cancellable = true
+helper = "prepare.rs"
+bindings = [
+  { name = "base", ty = "&std::path::Path", value = "base" },
+  { name = "mods", ty = "&[crate::mod_content::ContentMod]", value = "mods" },
+  { name = "cache", ty = "&std::path::Path", value = "cache" },
+]
+
+[[injection]]
+id = "create_tab_position"
+target = "horizon_client::creative::Creative::tab_position"
+kind = "HEAD"
+cancellable = true
+helper = "tab_position.rs"
+bindings = [{ name = "tab", ty = "&crate::creative::Tab", value = "tab" }]

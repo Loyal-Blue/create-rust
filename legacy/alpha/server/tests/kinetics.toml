@@ -1,0 +1,49 @@
+[[step]]
+join = "Castiel"
+player = { game-mode = "creative" }
+blocks = [
+ {x=0,y=64,z=0,state="create:hand_crank[axis=x]"},
+ {x=1,y=64,z=0,state="create:shaft[axis=x]"},
+ {x=2,y=64,z=0,state="create:mechanical_press[axis=x]"},
+]
+command = "kinetics info 0 64 0"
+expect.feedback = "hand_crank [x axis] at 0 64 0: 0 RPM; Idle; stress 0/0 SU; 1 blocks"
+
+[[step]]
+command = "kinetics scan 1 64 0 1"
+expect.feedback = "Queued radius-1 scan; 256 blocks per tick"
+
+[[step]]
+ticks=1
+expect.told = ["Castiel: Scan finished: 3 kinetic blocks; 3/512 tracked"]
+
+[[step]]
+command="kinetics crank 0 64 0"
+expect.feedback="Cranking for 10 seconds"
+
+[[step]]
+command="kinetics info 2 64 0"
+expect.feedback="mechanical_press [x axis] at 2 64 0: 32 RPM; Running; stress 256/256 SU; 3 blocks"
+
+[[step]]
+command="kinetics flip 0 64 0"
+expect.feedback="Reversed source or gearshift"
+
+[[step]]
+command="kinetics info 2 64 0"
+expect.feedback="mechanical_press [x axis] at 2 64 0: -32 RPM; Running; stress 256/256 SU; 3 blocks"
+
+[[step]]
+ticks=200
+command="kinetics info 2 64 0"
+expect.feedback="mechanical_press [x axis] at 2 64 0: 0 RPM; Idle; stress 0/0 SU; 3 blocks"
+
+[[step]]
+blocks=[{x=1,y=64,z=0,state="minecraft:air"}]
+ticks=1
+command="kinetics info 2 64 0"
+expect.feedback="mechanical_press [x axis] at 2 64 0: 0 RPM; Idle; stress 0/0 SU; 1 blocks"
+
+[[step]]
+command="kinetics info 1 64 0"
+expect.error="No loaded kinetic block there. Place it or /kinetics scan"

@@ -1,0 +1,8 @@
+minecraft = "26.3"
+create = "6.0.10"
+create_jar_sha256 = "ef87fe5709f1ba1f5b8bb20a2925b5afb4669e178fd6d8bf10c167759eefe37a"
+horizon_repository = "https://github.com/horizon-rust/horizon"
+horizon_commit = "87a6a7a161814ffffc846950aba4997f592df4fc"
+content_api = "0.2"
+server_api = "0.3"
+sdk = "vendor/horizon-mod-sdk (original src and WIT, standalone Cargo manifest)"

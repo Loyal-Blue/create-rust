@@ -1,0 +1,35 @@
+[[step]]
+join="Castiel"
+player={game-mode="creative"}
+blocks=[{x=0,y=64,z=0,state="create:creative_motor[axis=x]"},{x=1,y=64,z=0,state="create:mechanical_press[axis=x]"}]
+command="kinetics scan 0 64 0 1"
+[[step]]
+ticks=1
+command="create_lab open pressing 1 64 0"
+[[step]]
+command="create_lab put minecraft:iron_ingot 1"
+[[step]]
+join="Alex"
+as="Alex"
+player={game-mode="creative"}
+command="create_lab open pressing 1 64 0"
+[[step]]
+as="Alex"
+command="create_lab put minecraft:gold_ingot 1"
+[[step]]
+ticks=13
+as="Alex"
+command="create_lab show"
+expect.feedback="Virtual pressing: Completed; 0 work; input [empty]; output [create:golden_sheet x1]"
+[[step]]
+as="Castiel"
+command="create_lab show"
+expect.feedback="Virtual pressing: Completed; 0 work; input [empty]; output [create:iron_sheet x1]"
+[[step]]
+as="Alex"
+command="create_lab put minecraft:gold_ingot 1000"
+expect.error="Inventory or tank is full"
+[[step]]
+as="Alex"
+command="create_lab show"
+expect.feedback="Virtual pressing: Completed; 0 work; input [empty]; output [create:golden_sheet x1]"

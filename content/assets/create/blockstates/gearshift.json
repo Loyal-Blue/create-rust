@@ -1,0 +1,1 @@
+{"variants":{"axis=z":{"model":"create:item/gearshift"},"axis=x":{"model":"create:item/gearshift","y":90},"axis=y":{"model":"create:item/gearshift","x":90}}}

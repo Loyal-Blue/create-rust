@@ -1,0 +1,16 @@
+{
+  "category": "misc",
+  "key": {
+    "#": "#c:ingots/brass"
+  },
+  "pattern": [
+    "###",
+    "###",
+    "###"
+  ],
+  "result": {
+    "count": 1,
+    "id": "create:brass_block"
+  },
+  "type": "minecraft:crafting_shaped"
+}

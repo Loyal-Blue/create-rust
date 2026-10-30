@@ -1,0 +1,7 @@
+{
+  "values": [
+    "create:copper_sheet",
+    "create:golden_sheet",
+    "create:iron_sheet"
+  ]
+}

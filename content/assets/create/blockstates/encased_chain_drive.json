@@ -1,0 +1,1 @@
+{"variants":{"axis=z":{"model":"create:item/encased_chain_drive"},"axis=x":{"model":"create:item/encased_chain_drive","y":90},"axis=y":{"model":"create:item/encased_chain_drive","x":90}}}

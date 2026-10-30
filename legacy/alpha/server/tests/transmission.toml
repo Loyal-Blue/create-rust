@@ -1,0 +1,23 @@
+[[step]]
+join="Castiel"
+player={game-mode="creative"}
+blocks=[{x=0,y=64,z=0,state="create:hand_crank[axis=x]"},{x=1,y=64,z=0,state="create:gearshift[axis=x]"},{x=2,y=64,z=0,state="create:clutch[axis=x]"},{x=3,y=64,z=0,state="create:shaft[axis=x]"}]
+command="kinetics scan 1 64 0 3"
+[[step]]
+ticks=2
+command="kinetics crank 0 64 0"
+[[step]]
+command="kinetics flip 1 64 0"
+[[step]]
+command="kinetics info 3 64 0"
+expect.feedback="shaft [x axis] at 3 64 0: -32 RPM; Running; stress 0/256 SU; 4 blocks"
+[[step]]
+command="kinetics toggle 2 64 0"
+[[step]]
+command="kinetics info 3 64 0"
+expect.feedback="shaft [x axis] at 3 64 0: 0 RPM; Idle; stress 0/0 SU; 1 blocks"
+[[step]]
+command="kinetics toggle 2 64 0"
+[[step]]
+command="kinetics info 3 64 0"
+expect.feedback="shaft [x axis] at 3 64 0: -32 RPM; Running; stress 0/256 SU; 4 blocks"

@@ -1,0 +1,8 @@
+id = "create"
+name = "Create: Horizon Content Preview"
+version = "0.4.0"
+description = "Original Create 6.0.10 textures and item models adapted from your supplied JAR. Static block previews only; machine gameplay is not included."
+authors = ["Original assets: The Create Team", "Horizon format adaptation: Codex"]
+api = "0.2"
+side = "both"
+capabilities = ["registries"]

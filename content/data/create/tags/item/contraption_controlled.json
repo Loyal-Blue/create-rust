@@ -1,0 +1,12 @@
+{
+  "values": [
+    "create:deployer",
+    "create:mechanical_drill",
+    "create:mechanical_saw",
+    "minecraft:bell",
+    "minecraft:campfire",
+    "minecraft:dispenser",
+    "minecraft:dropper",
+    "minecraft:soul_campfire"
+  ]
+}

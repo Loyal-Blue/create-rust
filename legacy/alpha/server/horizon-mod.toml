@@ -1,0 +1,8 @@
+id = "create_logic"
+name = "Create: Horizon — Kinetics Alpha"
+version = "0.2.0"
+description = "Server kinetic networks and a command-driven machine laboratory. Requires Create: Horizon Content. No rotating renderers or survival machine inventories yet."
+authors = ["Port of Create (The Create Team, MIT) for Horizon"]
+api = "0.3"
+side = "server"
+capabilities = ["players", "world", "storage"]

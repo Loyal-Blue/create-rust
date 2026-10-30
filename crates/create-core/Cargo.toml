@@ -1,0 +1,6 @@
+[package]
+name = "create-horizon-core"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+description = "Engine-independent placement and kinetic simulation prototype; not a Horizon plugin"

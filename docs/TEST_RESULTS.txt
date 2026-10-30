@@ -1,0 +1,23 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.03s
+     Running unittests src/lib.rs (create-horizon-project/target/debug/deps/create_horizon_core-579881f82d9c204b)
+
+running 10 tests
+test tests::directional_placement_has_all_six_faces ... ok
+test tests::radial_flow_does_not_drive_a_wheel ... ok
+test tests::shaft_alignment_can_be_bypassed ... ok
+test tests::perpendicular_shafts_do_not_connect ... ok
+test tests::connected_shaft_rotates_then_stops_when_source_removed ... ok
+test tests::rotation_wraps_and_frame_duration_is_consistent ... ok
+test tests::still_water_stops_and_reversed_flow_reverses ... ok
+test tests::wrench_is_reversible ... ok
+test tests::incompatible_sources_jam_and_recover ... ok
+test tests::wheels_stay_horizontal_and_machines_upright ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+   Doc-tests create_horizon_core
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

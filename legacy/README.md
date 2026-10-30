@@ -1,0 +1,1 @@
+Historical experiments preserved for continuity. The active native companion is under native/; do not build these old experiments as the current release. They require older SDKs or engine patches and were not revalidated in this revision.

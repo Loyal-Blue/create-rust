@@ -1,0 +1,8 @@
+[package]
+name = "create-kinetics"
+version = "0.2.0"
+edition.workspace = true
+license.workspace = true
+description = "Rotation propagation and stress networks, after Create 6.0.10's kinetics"
+
+[dependencies]

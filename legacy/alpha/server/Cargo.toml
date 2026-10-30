@@ -1,0 +1,15 @@
+[package]
+name = "create-horizon"
+version = "0.2.0"
+edition = "2024"
+license = "MIT"
+publish = false
+description = "Create's kinetic networks for Horizon: shafts, cogwheels, sources and machines that share stress"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+create-kinetics = { path = "../kinetics" }
+create-simulation = { path = "../simulation" }
+horizon-mod-sdk = { path = "../vendor/horizon-mod-sdk" }

@@ -1,0 +1,69 @@
+[[step]]
+join="Castiel"
+player={game-mode="creative"}
+command="create_slot factory"
+expect.feedback="Selected world slot factory; 0 remembered blocks. Use this name only for this world."
+
+[[step]]
+blocks=[{x=0,y=64,z=0,state="create:creative_motor[axis=x]"},{x=1,y=64,z=0,state="create:mechanical_press[axis=x]"}]
+command="kinetics scan 0 64 0 1"
+
+[[step]]
+ticks=1
+command="create_lab open pressing 1 64 0"
+expect.feedback="Opened virtual pressing lab, driven by the placed machine's RPM. No real item inventory is connected."
+
+[[step]]
+command="create_lab put minecraft:iron_ingot 2"
+expect.feedback="Virtual input: minecraft:iron_ingot x2"
+
+[[step]]
+ticks=13
+command="create_lab show"
+expect.feedback="Virtual pressing: Completed; 0 work; input [minecraft:iron_ingot x1]; output [create:iron_sheet x1]"
+
+[[step]]
+ticks=13
+command="create_lab show"
+expect.feedback="Virtual pressing: Completed; 0 work; input [empty]; output [create:iron_sheet x2]"
+
+[[step]]
+ticks=20
+command="create_save"
+expect.feedback="Saved this slot's networks and virtual laboratories"
+[[step]]
+reload=true
+command="create_slot factory"
+expect.feedback="Selected world slot factory; 2 remembered blocks. Use this name only for this world."
+
+[[step]]
+command="create_lab show"
+expect.feedback="Virtual pressing: Idle; 0 work; input [empty]; output [create:iron_sheet x2]"
+
+[[step]]
+command="create_lab put minecraft:iron_ingot 1"
+[[step]]
+blocks=[{x=0,y=64,z=0,state="minecraft:air"}]
+ticks=20
+command="create_lab show"
+expect.feedback="Virtual pressing: NoPower; 0 work; input [minecraft:iron_ingot x1]; output [create:iron_sheet x2]"
+
+[[step]]
+player={game-mode="survival"}
+command="create_lab put minecraft:iron_ingot 64"
+expect.error="This alpha's setup and laboratory commands require Creative mode"
+
+[[step]]
+command="kinetics crank 0 64 0"
+expect.error="This alpha's setup and laboratory commands require Creative mode"
+
+[[step]]
+player={game-mode="creative"}
+blocks=[{x=1,y=64,z=0,state="create:shaft[axis=x]"},{x=0,y=64,z=0,state="create:creative_motor[axis=x]"}]
+command="kinetics info 1 64 0"
+[[step]]
+command="kinetics info 0 64 0"
+[[step]]
+ticks=20
+command="create_lab show"
+expect.feedback="Virtual pressing: NoPower; 0 work; input [minecraft:iron_ingot x1]; output [create:iron_sheet x2]"

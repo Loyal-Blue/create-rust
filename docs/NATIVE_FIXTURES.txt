@@ -1,0 +1,11 @@
+running 7 tests
+test migration::tests::legacy_upright_machine_stays_upright ... ok
+test migration::tests::legacy_motor_axis_and_waterlogging_migrate ... ok
+test migration::tests::modern_facing_is_preserved ... ok
+test support::tests::create_category_is_on_page_two_only ... ok
+test support::tests::motor_body_replaces_chain_shape_and_preserves_vanilla ... ok
+test support::tests::create_tab_and_search_have_all_items_without_duplicates ... ok
+test support::tests::overlay_replacement_does_not_modify_symlink_target ... ok
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+running 0 tests
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
