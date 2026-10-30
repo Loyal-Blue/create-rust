@@ -19,10 +19,11 @@ def generate(root):
     transmission = inline(transmission, 'tests', source(crates / 'create-transmission/src/tests.rs'), public=False)
     recipes = source(crates / 'create-recipes/src/lib.rs')
     recipes = inline(recipes, 'containers', source(crates / 'create-recipes/src/containers.rs'), public=False)
+    recipes = inline(recipes, 'wood', source(crates / 'create-recipes/src/wood.rs'), public=False)
     recipes = inline(recipes, 'catalog', source(crates / 'create-recipes/src/catalog.rs').replace('use crate::{', 'use super::{'))
     recipes = inline(recipes, 'tests', source(crates / 'create-recipes/src/tests.rs'), public=False)
     machines = source(crates / 'create-machines/src/lib.rs')
-    for name in ['worldgen', 'transport', 'fluids']:
+    for name in ['worldgen', 'transport', 'fluids', 'trees']:
         machines = inline(machines, name, source(crates / f'create-machines/src/{name}.rs'))
     # A module alias is inherited by nested tests; rewriting relative paths
     # throughout a nested module would resolve differently under cfg(test).

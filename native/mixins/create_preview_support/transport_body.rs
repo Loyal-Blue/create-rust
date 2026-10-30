@@ -423,3 +423,42 @@ fn tick_transport(
         }
     }
 }
+
+fn chute_world_input(game: &mut Game<'_>, p: MachinePos, held: &BTreeSet<u32>) {
+    let Some(entity)=game.world.block_entities.get(&p) else {return};
+    let before=entity.slots().to_vec();
+    for i in 0..game.dropped.len() {
+        let item=&game.dropped[i];
+        if held.contains(&item.id) || item.target.is_some() || !transport::chute_capture(
+            [item.position.x-p.0 as f64,item.position.y-p.1 as f64,item.position.z-p.2 as f64],item.velocity.y) {continue;}
+        let original=item.stack.clone();
+        let Some((source,dest))=machines::transfer(&portable(&[Some(original.clone())]),&portable(&before),64,
+            |id|game.items().get(id).map_or(1,|i|i.max_stack)) else {continue};
+        let mut originals=before.clone();originals.push(Some(original));
+        let (Some(left),Some(after))=(restore(&source.after,&originals),restore(&dest.after,&originals)) else {continue};
+        let Some(entity)=game.world.block_entities.get_mut(&p) else {return};
+        if entity.slots()!=before {return;}
+        entity.slots_mut().clone_from_slice(&after);
+        if let Some(left)=left.into_iter().next().flatten() {game.dropped[i].stack=left;}else{game.dropped.remove(i);}
+        dirty_machine(game,p);return;
+    }
+}
+fn chute_world_output(game: &mut Game<'_>, p: MachinePos) {
+    let below=(p.0,p.1-1,p.2);
+    if !game.world.loaded(below.0,below.2) || game.world.block_entities.get(&below).is_some_and(|e| !e.slots().is_empty()) {return;}
+    let id=game.world.block(below.0,below.1,below.2);
+    let name=machine_name(game,below);
+    if !game.res.facts().is_air(id) && name!="create:belt" && name!="minecraft:water" {return;}
+    if game.dropped.iter().any(|e|
+        (e.position.x-p.0 as f64-0.5).abs()<0.45 && (e.position.z-p.2 as f64-0.5).abs()<0.45
+        && (e.position.y-p.1 as f64).abs()<0.6) {return;}
+    let Some(entity)=game.world.block_entities.get(&p) else {return};
+    let before=entity.slots().to_vec();
+    let Some((source,dest))=machines::transfer(&portable(&before),&[None],1,|id|game.items().get(id).map_or(1,|i|i.max_stack)) else {return};
+    let (Some(after),Some(out))=(restore(&source.after,&before),restore(&dest.after,&before)) else {return};
+    let Some(stack)=out.into_iter().next().flatten() else {return};
+    let Some(entity)=game.world.block_entities.get_mut(&p) else {return};
+    if entity.slots()!=before {return;}
+    entity.slots_mut().clone_from_slice(&after);dirty_machine(game,p);
+    game.spawn_item(stack,[p.0 as f64+0.5,p.1 as f64-0.05,p.2 as f64+0.5],[0.0,-0.05,0.0],10);
+}

@@ -1,0 +1,462 @@
+//! Authored wood processing for runtime-generated Java recipes absent from the imported JSON set.
+use super::{Heat, Ingredient, Product, Recipe};
+macro_rules! cut {
+    ($name:literal,$input:literal,$output:literal,$count:literal) => {
+        Recipe {
+            id: concat!("create:cutting/horizon/", $name),
+            station: "cutting",
+            ingredients: &[Ingredient {
+                matcher: $input,
+                count: 1,
+                fluid: false,
+                consume: true,
+            }],
+            products: &[Product {
+                id: $output,
+                count: $count,
+                fluid: false,
+                chance: 1.0,
+            }],
+            work: 100,
+            heat: Heat::None,
+        }
+    };
+}
+pub fn recipes() -> &'static [Recipe] {
+    &[
+        cut!(
+            "oak_strip_log",
+            "minecraft:oak_log",
+            "minecraft:stripped_oak_log",
+            1
+        ),
+        cut!(
+            "oak_strip_wood",
+            "minecraft:oak_wood",
+            "minecraft:stripped_oak_wood",
+            1
+        ),
+        cut!(
+            "oak_log_planks",
+            "minecraft:stripped_oak_log",
+            "minecraft:oak_planks",
+            6
+        ),
+        cut!(
+            "oak_wood_planks",
+            "minecraft:stripped_oak_wood",
+            "minecraft:oak_planks",
+            6
+        ),
+        cut!("oak_slabs", "minecraft:oak_planks", "minecraft:oak_slab", 2),
+        cut!(
+            "oak_stairs",
+            "minecraft:oak_planks",
+            "minecraft:oak_stairs",
+            1
+        ),
+        cut!(
+            "spruce_strip_log",
+            "minecraft:spruce_log",
+            "minecraft:stripped_spruce_log",
+            1
+        ),
+        cut!(
+            "spruce_strip_wood",
+            "minecraft:spruce_wood",
+            "minecraft:stripped_spruce_wood",
+            1
+        ),
+        cut!(
+            "spruce_log_planks",
+            "minecraft:stripped_spruce_log",
+            "minecraft:spruce_planks",
+            6
+        ),
+        cut!(
+            "spruce_wood_planks",
+            "minecraft:stripped_spruce_wood",
+            "minecraft:spruce_planks",
+            6
+        ),
+        cut!(
+            "spruce_slabs",
+            "minecraft:spruce_planks",
+            "minecraft:spruce_slab",
+            2
+        ),
+        cut!(
+            "spruce_stairs",
+            "minecraft:spruce_planks",
+            "minecraft:spruce_stairs",
+            1
+        ),
+        cut!(
+            "birch_strip_log",
+            "minecraft:birch_log",
+            "minecraft:stripped_birch_log",
+            1
+        ),
+        cut!(
+            "birch_strip_wood",
+            "minecraft:birch_wood",
+            "minecraft:stripped_birch_wood",
+            1
+        ),
+        cut!(
+            "birch_log_planks",
+            "minecraft:stripped_birch_log",
+            "minecraft:birch_planks",
+            6
+        ),
+        cut!(
+            "birch_wood_planks",
+            "minecraft:stripped_birch_wood",
+            "minecraft:birch_planks",
+            6
+        ),
+        cut!(
+            "birch_slabs",
+            "minecraft:birch_planks",
+            "minecraft:birch_slab",
+            2
+        ),
+        cut!(
+            "birch_stairs",
+            "minecraft:birch_planks",
+            "minecraft:birch_stairs",
+            1
+        ),
+        cut!(
+            "jungle_strip_log",
+            "minecraft:jungle_log",
+            "minecraft:stripped_jungle_log",
+            1
+        ),
+        cut!(
+            "jungle_strip_wood",
+            "minecraft:jungle_wood",
+            "minecraft:stripped_jungle_wood",
+            1
+        ),
+        cut!(
+            "jungle_log_planks",
+            "minecraft:stripped_jungle_log",
+            "minecraft:jungle_planks",
+            6
+        ),
+        cut!(
+            "jungle_wood_planks",
+            "minecraft:stripped_jungle_wood",
+            "minecraft:jungle_planks",
+            6
+        ),
+        cut!(
+            "jungle_slabs",
+            "minecraft:jungle_planks",
+            "minecraft:jungle_slab",
+            2
+        ),
+        cut!(
+            "jungle_stairs",
+            "minecraft:jungle_planks",
+            "minecraft:jungle_stairs",
+            1
+        ),
+        cut!(
+            "acacia_strip_log",
+            "minecraft:acacia_log",
+            "minecraft:stripped_acacia_log",
+            1
+        ),
+        cut!(
+            "acacia_strip_wood",
+            "minecraft:acacia_wood",
+            "minecraft:stripped_acacia_wood",
+            1
+        ),
+        cut!(
+            "acacia_log_planks",
+            "minecraft:stripped_acacia_log",
+            "minecraft:acacia_planks",
+            6
+        ),
+        cut!(
+            "acacia_wood_planks",
+            "minecraft:stripped_acacia_wood",
+            "minecraft:acacia_planks",
+            6
+        ),
+        cut!(
+            "acacia_slabs",
+            "minecraft:acacia_planks",
+            "minecraft:acacia_slab",
+            2
+        ),
+        cut!(
+            "acacia_stairs",
+            "minecraft:acacia_planks",
+            "minecraft:acacia_stairs",
+            1
+        ),
+        cut!(
+            "dark_oak_strip_log",
+            "minecraft:dark_oak_log",
+            "minecraft:stripped_dark_oak_log",
+            1
+        ),
+        cut!(
+            "dark_oak_strip_wood",
+            "minecraft:dark_oak_wood",
+            "minecraft:stripped_dark_oak_wood",
+            1
+        ),
+        cut!(
+            "dark_oak_log_planks",
+            "minecraft:stripped_dark_oak_log",
+            "minecraft:dark_oak_planks",
+            6
+        ),
+        cut!(
+            "dark_oak_wood_planks",
+            "minecraft:stripped_dark_oak_wood",
+            "minecraft:dark_oak_planks",
+            6
+        ),
+        cut!(
+            "dark_oak_slabs",
+            "minecraft:dark_oak_planks",
+            "minecraft:dark_oak_slab",
+            2
+        ),
+        cut!(
+            "dark_oak_stairs",
+            "minecraft:dark_oak_planks",
+            "minecraft:dark_oak_stairs",
+            1
+        ),
+        cut!(
+            "mangrove_strip_log",
+            "minecraft:mangrove_log",
+            "minecraft:stripped_mangrove_log",
+            1
+        ),
+        cut!(
+            "mangrove_strip_wood",
+            "minecraft:mangrove_wood",
+            "minecraft:stripped_mangrove_wood",
+            1
+        ),
+        cut!(
+            "mangrove_log_planks",
+            "minecraft:stripped_mangrove_log",
+            "minecraft:mangrove_planks",
+            6
+        ),
+        cut!(
+            "mangrove_wood_planks",
+            "minecraft:stripped_mangrove_wood",
+            "minecraft:mangrove_planks",
+            6
+        ),
+        cut!(
+            "mangrove_slabs",
+            "minecraft:mangrove_planks",
+            "minecraft:mangrove_slab",
+            2
+        ),
+        cut!(
+            "mangrove_stairs",
+            "minecraft:mangrove_planks",
+            "minecraft:mangrove_stairs",
+            1
+        ),
+        cut!(
+            "cherry_strip_log",
+            "minecraft:cherry_log",
+            "minecraft:stripped_cherry_log",
+            1
+        ),
+        cut!(
+            "cherry_strip_wood",
+            "minecraft:cherry_wood",
+            "minecraft:stripped_cherry_wood",
+            1
+        ),
+        cut!(
+            "cherry_log_planks",
+            "minecraft:stripped_cherry_log",
+            "minecraft:cherry_planks",
+            6
+        ),
+        cut!(
+            "cherry_wood_planks",
+            "minecraft:stripped_cherry_wood",
+            "minecraft:cherry_planks",
+            6
+        ),
+        cut!(
+            "cherry_slabs",
+            "minecraft:cherry_planks",
+            "minecraft:cherry_slab",
+            2
+        ),
+        cut!(
+            "cherry_stairs",
+            "minecraft:cherry_planks",
+            "minecraft:cherry_stairs",
+            1
+        ),
+        cut!(
+            "pale_oak_strip_log",
+            "minecraft:pale_oak_log",
+            "minecraft:stripped_pale_oak_log",
+            1
+        ),
+        cut!(
+            "pale_oak_strip_wood",
+            "minecraft:pale_oak_wood",
+            "minecraft:stripped_pale_oak_wood",
+            1
+        ),
+        cut!(
+            "pale_oak_log_planks",
+            "minecraft:stripped_pale_oak_log",
+            "minecraft:pale_oak_planks",
+            6
+        ),
+        cut!(
+            "pale_oak_wood_planks",
+            "minecraft:stripped_pale_oak_wood",
+            "minecraft:pale_oak_planks",
+            6
+        ),
+        cut!(
+            "pale_oak_slabs",
+            "minecraft:pale_oak_planks",
+            "minecraft:pale_oak_slab",
+            2
+        ),
+        cut!(
+            "pale_oak_stairs",
+            "minecraft:pale_oak_planks",
+            "minecraft:pale_oak_stairs",
+            1
+        ),
+        cut!(
+            "crimson_strip_log",
+            "minecraft:crimson_stem",
+            "minecraft:stripped_crimson_stem",
+            1
+        ),
+        cut!(
+            "crimson_strip_wood",
+            "minecraft:crimson_hyphae",
+            "minecraft:stripped_crimson_hyphae",
+            1
+        ),
+        cut!(
+            "crimson_log_planks",
+            "minecraft:stripped_crimson_stem",
+            "minecraft:crimson_planks",
+            6
+        ),
+        cut!(
+            "crimson_wood_planks",
+            "minecraft:stripped_crimson_hyphae",
+            "minecraft:crimson_planks",
+            6
+        ),
+        cut!(
+            "crimson_slabs",
+            "minecraft:crimson_planks",
+            "minecraft:crimson_slab",
+            2
+        ),
+        cut!(
+            "crimson_stairs",
+            "minecraft:crimson_planks",
+            "minecraft:crimson_stairs",
+            1
+        ),
+        cut!(
+            "warped_strip_log",
+            "minecraft:warped_stem",
+            "minecraft:stripped_warped_stem",
+            1
+        ),
+        cut!(
+            "warped_strip_wood",
+            "minecraft:warped_hyphae",
+            "minecraft:stripped_warped_hyphae",
+            1
+        ),
+        cut!(
+            "warped_log_planks",
+            "minecraft:stripped_warped_stem",
+            "minecraft:warped_planks",
+            6
+        ),
+        cut!(
+            "warped_wood_planks",
+            "minecraft:stripped_warped_hyphae",
+            "minecraft:warped_planks",
+            6
+        ),
+        cut!(
+            "warped_slabs",
+            "minecraft:warped_planks",
+            "minecraft:warped_slab",
+            2
+        ),
+        cut!(
+            "warped_stairs",
+            "minecraft:warped_planks",
+            "minecraft:warped_stairs",
+            1
+        ),
+    ]
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn ids_are_unique_and_inputs_and_outputs_are_balanced() {
+        let all = recipes();
+        assert_eq!(all.len(), 66);
+        let ids: std::collections::BTreeSet<_> = all.iter().map(|r| r.id).collect();
+        assert_eq!(ids.len(), all.len());
+        assert!(
+            all.iter()
+                .all(|r| r.ingredients[0].count == 1 && r.products[0].count > 0)
+        );
+    }
+    #[test]
+    fn logs_strip_then_produce_six_planks() {
+        let first = recipes()
+            .iter()
+            .find(|r| r.ingredients[0].matcher == "minecraft:oak_log")
+            .unwrap();
+        assert_eq!(first.products[0].id, "minecraft:stripped_oak_log");
+        let next = recipes()
+            .iter()
+            .find(|r| r.ingredients[0].matcher == first.products[0].id)
+            .unwrap();
+        assert_eq!(
+            (next.products[0].id, next.products[0].count),
+            ("minecraft:oak_planks", 6)
+        );
+    }
+    #[test]
+    fn output_filter_selects_stairs_without_matching_slabs() {
+        let r: Vec<_> = recipes()
+            .iter()
+            .filter(|r| {
+                r.ingredients[0].matcher == "minecraft:oak_planks"
+                    && super::super::output_matches(r, Some("minecraft:oak_stairs"))
+            })
+            .collect();
+        assert_eq!(r.len(), 1);
+        assert_eq!(r[0].products[0].id, "minecraft:oak_stairs");
+    }
+}

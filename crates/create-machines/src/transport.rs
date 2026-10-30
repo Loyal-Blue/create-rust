@@ -219,3 +219,42 @@ mod mouth_tests {
         assert!(!at_mouth(Facing::South, [0.0, 0.0, -0.8]));
     }
 }
+
+/// Mouth of a vertical chute. Only falling/resting stacks above its own opening.
+pub fn chute_capture(local: [f64; 3], velocity_y: f64) -> bool {
+    local.iter().all(|v| v.is_finite())
+        && velocity_y.is_finite()
+        && velocity_y <= 0.05
+        && (0.125..=0.875).contains(&local[0])
+        && (0.125..=0.875).contains(&local[2])
+        && (0.95..=1.5).contains(&local[1])
+}
+#[cfg(test)]
+mod chute_tests {
+    use super::*;
+    #[test]
+    fn mouths_capture_only_their_own_falling_lane() {
+        assert!(chute_capture([0.5, 1.0, 0.5], 0.0));
+        assert!(chute_capture([0.5, 1.4, 0.5], -0.5));
+        for (at, v) in [
+            ([1.5, 1.0, 0.5], 0.0),
+            ([0.5, 0.5, 0.5], -0.1),
+            ([0.5, 1.0, 0.5], 0.2),
+            ([f64::NAN, 1.0, 0.5], 0.0),
+        ] {
+            assert!(!chute_capture(at, v));
+        }
+    }
+    #[test]
+    fn a_full_chute_never_removes_the_falling_stack() {
+        let stack = Stack {
+            id: "minecraft:iron_ingot".into(),
+            count: 64,
+            components: "named".into(),
+        };
+        let source = vec![Some(stack.clone())];
+        let into = vec![Some(stack); 27];
+        assert!(super::super::transfer(&source, &into, 64, |_| 64).is_none());
+        assert_eq!(source[0].as_ref().unwrap().count, 64);
+    }
+}

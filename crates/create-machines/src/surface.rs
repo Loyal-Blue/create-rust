@@ -622,3 +622,133 @@ mod crusher_tests {
         panic!("world ore stack did not crush");
     }
 }
+
+/// A top-facing machine catches a stack only within its own footprint and
+/// close to the authored collision surface. Never captures below/neighbor items.
+pub fn on_processor_top(origin: [i32; 3], height: f64, item: [f64; 3]) -> bool {
+    height.is_finite()
+        && (0.0..=1.0).contains(&height)
+        && item.iter().all(|v| v.is_finite())
+        && (item[0] - f64::from(origin[0]) - 0.5).abs() <= 0.45
+        && (item[2] - f64::from(origin[2]) - 0.5).abs() <= 0.45
+        && (-0.1..=0.25).contains(&(item[1] - f64::from(origin[1]) - height))
+}
+#[cfg(test)]
+mod top_tests {
+    use super::*;
+    #[test]
+    fn top_capture_is_local_and_finite() {
+        assert!(on_processor_top([10, 4, 20], 0.8125, [10.5, 4.8125, 20.5]));
+        assert!(on_processor_top([10, 4, 20], 0.75, [10.5, 4.6875, 20.5]));
+        for at in [
+            [11.5, 4.8125, 20.5],
+            [10.5, 3.8125, 20.5],
+            [10.5, 5.5, 20.5],
+            [f64::NAN, 4.8, 20.5],
+        ] {
+            assert!(!on_processor_top([10, 4, 20], 0.8125, at));
+        }
+        assert!(!on_processor_top([10, 4, 20], 1.1, [10.5, 5.1, 20.5]));
+    }
+    fn bucket() -> Stack {
+        Stack {
+            id: "minecraft:water_bucket".into(),
+            count: 1,
+            components: String::new(),
+        }
+    }
+    #[test]
+    fn loose_bucket_emptying_keeps_real_fluid_and_returns_container() {
+        let mut state = MachineState::default();
+        for _ in 0..100 {
+            let u = work(
+                &state,
+                77,
+                &bucket(),
+                "emptying",
+                32.0,
+                Heat::None,
+                create_simulation::active_recipes(),
+                |_| 64,
+            )
+            .unwrap();
+            state = MachineState::decode(&u.state.encode()).unwrap();
+            if u.result == TickResult::Completed {
+                assert!(u.remaining.is_none());
+                assert_eq!(u.outputs[0].id, "minecraft:bucket");
+                assert_eq!(state.fluid_out.get("minecraft:water"), Some(&1000));
+                return;
+            }
+        }
+        panic!("drain never finished");
+    }
+    #[test]
+    fn full_drain_does_not_consume_world_bucket_or_advance_rng() {
+        let state = MachineState {
+            fluid_out: std::collections::BTreeMap::from([("minecraft:water".into(), 8000)]),
+            ..Default::default()
+        };
+        let original = state.clone();
+        let mut state = state;
+        let mut blocked = None;
+        for _ in 0..100 {
+            let u = work(
+                &state,
+                77,
+                &bucket(),
+                "emptying",
+                32.0,
+                Heat::None,
+                create_simulation::active_recipes(),
+                |_| 64,
+            )
+            .unwrap();
+            state = u.state.clone();
+            if u.result == TickResult::OutputBlocked {
+                blocked = Some(u);
+                break;
+            }
+            assert_ne!(u.result, TickResult::Completed);
+        }
+        let u = blocked.expect("full drain must block completion");
+        assert_eq!(u.remaining, Some(bucket()));
+        assert!(u.outputs.is_empty());
+        assert_eq!(u.state.fluid_out, original.fluid_out);
+        assert_eq!(u.state.rng, original.rng);
+    }
+    #[test]
+    fn top_saw_cuts_one_item_per_cycle_and_keeps_remainder_components() {
+        let input = Stack {
+            id: "minecraft:oak_log".into(),
+            count: 8,
+            components: "named-log".into(),
+        };
+        let mut state = MachineState::default();
+        for _ in 0..200 {
+            let u = work(
+                &state,
+                81,
+                &input,
+                "cutting",
+                32.0,
+                Heat::None,
+                create_simulation::active_recipes(),
+                |_| 64,
+            )
+            .unwrap();
+            state = u.state;
+            if u.result == TickResult::Completed {
+                let remaining = u.remaining.unwrap();
+                assert_eq!(remaining.count, 7);
+                assert_eq!(remaining.components, input.components);
+                assert!(
+                    u.outputs
+                        .iter()
+                        .any(|s| s.id == "minecraft:stripped_oak_log")
+                );
+                return;
+            }
+        }
+        panic!("saw never finished");
+    }
+}

@@ -2,7 +2,7 @@
 
 An independent, unfinished Create-style mod for Horizon Minecraft 26.3. Not affiliated with the Create Team or Horizon.
 
-## Current build: content 0.7.0 + native support 0.5.0
+## Current build: content 0.7.1 + native support 0.6.0
 
 This build connects machinery to server ticks, real inventory slots, chunk saves and client rotation updates. It includes 39 blocks and 37 standalone items. It is an experimental machinery baseline, not a complete port of Create. No running-game verification has been performed.
 
@@ -13,11 +13,11 @@ This build connects machinery to server ticks, real inventory slots, chunk saves
 - Burner fuel/heat, fluid storage and branched pipe pumping, chute/hopper integration, block drilling, and zinc in fresh overworld terrain.
 - Machine progress, fuel, fluids, RPM and phase saved with chunks; existing container storage saves the items. Server snapshots drive client rotation.
 
-See [functional scope](docs/FUNCTIONAL_SCOPE.md) for per-system behavior and gaps. Sloped/branched belts, contraptions, trains, full world deployer/saw behavior, multiblock tanks and exact Create GUIs are still absent. The 349-entry recipe catalogue is broader than the installed content; unavailable outputs are filtered before processing.
+See [functional scope](docs/FUNCTIONAL_SCOPE.md) for per-system behavior and gaps. Sloped/branched belts, contraptions, trains, full world deployer behavior, multiblock tanks and exact Create GUIs are still absent. The 415-entry recipe catalogue is broader than the installed content; unavailable outputs are filtered before processing.
 
-## World processing in native 0.5.0
+## World processing in native 0.6.0
 
-Presses process stacks on belts and bulk-press depot contents. Inward-turning horizontal crushing-wheel pairs catch and bulk-crush loose stacks. Spouts fill loose belt items, water bottles carry their water contents, and generic bucket filling/draining is supported. Fans blow/suck item entities and process them through water, lava, fire or lit campfire/soul-fire streams, bounded by loaded chunks and solid obstacles. Depots capture dropped stacks, display their contents, and accept direct insert/collect interactions. Press heads and mixer partials move with synchronized processing progress and drive phase.
+Top-facing saws cut dropped stacks and horizontal saws fell bounded trees. Item drains empty compatible containers resting on top. Chutes catch falling stacks and discharge items into open space or onto belts. Presses process stacks on belts and bulk-press depot contents. Inward-turning horizontal crushing-wheel pairs catch and bulk-crush loose stacks. Spouts fill loose belt items, water bottles carry their water contents, and generic bucket filling/draining is supported. Fans blow/suck item entities and process them through water, lava, fire or lit campfire/soul-fire streams, bounded by loaded chunks and solid obstacles. Depots capture dropped stacks, display their contents, and accept direct insert/collect interactions. Press heads and mixer partials move with synchronized processing progress and drive phase.
 
 Pumps now route through branched pipe networks and share their transfer budget across destinations. New fills of fluid tanks enforce one fluid and a total 8,000 mB capacity; older stored contents are preserved for draining. See [world processing controls](docs/WORLD_PROCESSING.md) and [fluid routing](docs/FLUIDS.md) for the supported arrangements and current limits.
 

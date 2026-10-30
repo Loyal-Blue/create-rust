@@ -395,6 +395,7 @@ fn process_with_fluid_owner(
         .iter()
         .filter(|r| {
             (r.station == station || (station == "compacting" && r.station == "pressing"))
+                && (station != "cutting" || recipes::output_matches(r,state.item_filter.as_deref()))
                 && r.products
                     .iter()
                     .all(|p| p.fluid || game.items().get(p.id).is_some())
@@ -772,30 +773,9 @@ pub(super) fn tick_machines(game: &mut Game<'_>) {
             machines::station(name).filter(|_| !surface_run.handled.contains(p))
         {
             if name == "create:encased_fan" {
-                let face = game
-                    .pack
-                    .assets
-                    .registry
-                    .state(game.world.block(p.0, p.1, p.2))
-                    .and_then(|s| s.properties.get("facing"))
-                    .map(String::as_str)
-                    .unwrap_or("south");
-                let delta = match face {
-                    "north" => [0, 0, -1],
-                    "east" => [1, 0, 0],
-                    "west" => [-1, 0, 0],
-                    "up" => [0, 1, 0],
-                    "down" => [0, -1, 0],
-                    _ => [0, 0, 1],
-                };
-                station = match machine_name(game, (p.0 + delta[0], p.1 + delta[1], p.2 + delta[2]))
-                    .as_str()
-                {
-                    "minecraft:water" => "splashing",
-                    "minecraft:lava" => "blasting",
-                    "minecraft:fire" => "smoking",
-                    "minecraft:soul_fire" => "haunting",
-                    _ => {
+                station = match fan_station(game, *p, facing_step(game, *p)) {
+                    Some(station) => station,
+                    None => {
                         let mut state = read_machine(game, *p);
                         state.status = "NoMedium".into();
                         store_machine(game, *p, state);
@@ -903,8 +883,10 @@ pub(super) fn tick_machines(game: &mut Game<'_>) {
             }
         }
         if name == "create:chute" {
+            chute_world_input(game,*p,&surface_run.held);
             move_item(game, (p.0, p.1 + 1, p.2), *p);
             move_item(game, *p, below);
+            chute_world_output(game,*p);
         }
     }
     tick_transport(game, &positions, &solved.speeds, &surface_run.held);

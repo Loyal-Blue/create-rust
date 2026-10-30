@@ -12495,6 +12495,471 @@ pub fn recipes() -> &'static [Recipe] {
 }
 
 }
+mod wood {
+// Authored wood processing for runtime-generated Java recipes absent from the imported JSON set.
+use super::{Heat, Ingredient, Product, Recipe};
+macro_rules! cut {
+    ($name:literal,$input:literal,$output:literal,$count:literal) => {
+        Recipe {
+            id: concat!("create:cutting/horizon/", $name),
+            station: "cutting",
+            ingredients: &[Ingredient {
+                matcher: $input,
+                count: 1,
+                fluid: false,
+                consume: true,
+            }],
+            products: &[Product {
+                id: $output,
+                count: $count,
+                fluid: false,
+                chance: 1.0,
+            }],
+            work: 100,
+            heat: Heat::None,
+        }
+    };
+}
+pub fn recipes() -> &'static [Recipe] {
+    &[
+        cut!(
+            "oak_strip_log",
+            "minecraft:oak_log",
+            "minecraft:stripped_oak_log",
+            1
+        ),
+        cut!(
+            "oak_strip_wood",
+            "minecraft:oak_wood",
+            "minecraft:stripped_oak_wood",
+            1
+        ),
+        cut!(
+            "oak_log_planks",
+            "minecraft:stripped_oak_log",
+            "minecraft:oak_planks",
+            6
+        ),
+        cut!(
+            "oak_wood_planks",
+            "minecraft:stripped_oak_wood",
+            "minecraft:oak_planks",
+            6
+        ),
+        cut!("oak_slabs", "minecraft:oak_planks", "minecraft:oak_slab", 2),
+        cut!(
+            "oak_stairs",
+            "minecraft:oak_planks",
+            "minecraft:oak_stairs",
+            1
+        ),
+        cut!(
+            "spruce_strip_log",
+            "minecraft:spruce_log",
+            "minecraft:stripped_spruce_log",
+            1
+        ),
+        cut!(
+            "spruce_strip_wood",
+            "minecraft:spruce_wood",
+            "minecraft:stripped_spruce_wood",
+            1
+        ),
+        cut!(
+            "spruce_log_planks",
+            "minecraft:stripped_spruce_log",
+            "minecraft:spruce_planks",
+            6
+        ),
+        cut!(
+            "spruce_wood_planks",
+            "minecraft:stripped_spruce_wood",
+            "minecraft:spruce_planks",
+            6
+        ),
+        cut!(
+            "spruce_slabs",
+            "minecraft:spruce_planks",
+            "minecraft:spruce_slab",
+            2
+        ),
+        cut!(
+            "spruce_stairs",
+            "minecraft:spruce_planks",
+            "minecraft:spruce_stairs",
+            1
+        ),
+        cut!(
+            "birch_strip_log",
+            "minecraft:birch_log",
+            "minecraft:stripped_birch_log",
+            1
+        ),
+        cut!(
+            "birch_strip_wood",
+            "minecraft:birch_wood",
+            "minecraft:stripped_birch_wood",
+            1
+        ),
+        cut!(
+            "birch_log_planks",
+            "minecraft:stripped_birch_log",
+            "minecraft:birch_planks",
+            6
+        ),
+        cut!(
+            "birch_wood_planks",
+            "minecraft:stripped_birch_wood",
+            "minecraft:birch_planks",
+            6
+        ),
+        cut!(
+            "birch_slabs",
+            "minecraft:birch_planks",
+            "minecraft:birch_slab",
+            2
+        ),
+        cut!(
+            "birch_stairs",
+            "minecraft:birch_planks",
+            "minecraft:birch_stairs",
+            1
+        ),
+        cut!(
+            "jungle_strip_log",
+            "minecraft:jungle_log",
+            "minecraft:stripped_jungle_log",
+            1
+        ),
+        cut!(
+            "jungle_strip_wood",
+            "minecraft:jungle_wood",
+            "minecraft:stripped_jungle_wood",
+            1
+        ),
+        cut!(
+            "jungle_log_planks",
+            "minecraft:stripped_jungle_log",
+            "minecraft:jungle_planks",
+            6
+        ),
+        cut!(
+            "jungle_wood_planks",
+            "minecraft:stripped_jungle_wood",
+            "minecraft:jungle_planks",
+            6
+        ),
+        cut!(
+            "jungle_slabs",
+            "minecraft:jungle_planks",
+            "minecraft:jungle_slab",
+            2
+        ),
+        cut!(
+            "jungle_stairs",
+            "minecraft:jungle_planks",
+            "minecraft:jungle_stairs",
+            1
+        ),
+        cut!(
+            "acacia_strip_log",
+            "minecraft:acacia_log",
+            "minecraft:stripped_acacia_log",
+            1
+        ),
+        cut!(
+            "acacia_strip_wood",
+            "minecraft:acacia_wood",
+            "minecraft:stripped_acacia_wood",
+            1
+        ),
+        cut!(
+            "acacia_log_planks",
+            "minecraft:stripped_acacia_log",
+            "minecraft:acacia_planks",
+            6
+        ),
+        cut!(
+            "acacia_wood_planks",
+            "minecraft:stripped_acacia_wood",
+            "minecraft:acacia_planks",
+            6
+        ),
+        cut!(
+            "acacia_slabs",
+            "minecraft:acacia_planks",
+            "minecraft:acacia_slab",
+            2
+        ),
+        cut!(
+            "acacia_stairs",
+            "minecraft:acacia_planks",
+            "minecraft:acacia_stairs",
+            1
+        ),
+        cut!(
+            "dark_oak_strip_log",
+            "minecraft:dark_oak_log",
+            "minecraft:stripped_dark_oak_log",
+            1
+        ),
+        cut!(
+            "dark_oak_strip_wood",
+            "minecraft:dark_oak_wood",
+            "minecraft:stripped_dark_oak_wood",
+            1
+        ),
+        cut!(
+            "dark_oak_log_planks",
+            "minecraft:stripped_dark_oak_log",
+            "minecraft:dark_oak_planks",
+            6
+        ),
+        cut!(
+            "dark_oak_wood_planks",
+            "minecraft:stripped_dark_oak_wood",
+            "minecraft:dark_oak_planks",
+            6
+        ),
+        cut!(
+            "dark_oak_slabs",
+            "minecraft:dark_oak_planks",
+            "minecraft:dark_oak_slab",
+            2
+        ),
+        cut!(
+            "dark_oak_stairs",
+            "minecraft:dark_oak_planks",
+            "minecraft:dark_oak_stairs",
+            1
+        ),
+        cut!(
+            "mangrove_strip_log",
+            "minecraft:mangrove_log",
+            "minecraft:stripped_mangrove_log",
+            1
+        ),
+        cut!(
+            "mangrove_strip_wood",
+            "minecraft:mangrove_wood",
+            "minecraft:stripped_mangrove_wood",
+            1
+        ),
+        cut!(
+            "mangrove_log_planks",
+            "minecraft:stripped_mangrove_log",
+            "minecraft:mangrove_planks",
+            6
+        ),
+        cut!(
+            "mangrove_wood_planks",
+            "minecraft:stripped_mangrove_wood",
+            "minecraft:mangrove_planks",
+            6
+        ),
+        cut!(
+            "mangrove_slabs",
+            "minecraft:mangrove_planks",
+            "minecraft:mangrove_slab",
+            2
+        ),
+        cut!(
+            "mangrove_stairs",
+            "minecraft:mangrove_planks",
+            "minecraft:mangrove_stairs",
+            1
+        ),
+        cut!(
+            "cherry_strip_log",
+            "minecraft:cherry_log",
+            "minecraft:stripped_cherry_log",
+            1
+        ),
+        cut!(
+            "cherry_strip_wood",
+            "minecraft:cherry_wood",
+            "minecraft:stripped_cherry_wood",
+            1
+        ),
+        cut!(
+            "cherry_log_planks",
+            "minecraft:stripped_cherry_log",
+            "minecraft:cherry_planks",
+            6
+        ),
+        cut!(
+            "cherry_wood_planks",
+            "minecraft:stripped_cherry_wood",
+            "minecraft:cherry_planks",
+            6
+        ),
+        cut!(
+            "cherry_slabs",
+            "minecraft:cherry_planks",
+            "minecraft:cherry_slab",
+            2
+        ),
+        cut!(
+            "cherry_stairs",
+            "minecraft:cherry_planks",
+            "minecraft:cherry_stairs",
+            1
+        ),
+        cut!(
+            "pale_oak_strip_log",
+            "minecraft:pale_oak_log",
+            "minecraft:stripped_pale_oak_log",
+            1
+        ),
+        cut!(
+            "pale_oak_strip_wood",
+            "minecraft:pale_oak_wood",
+            "minecraft:stripped_pale_oak_wood",
+            1
+        ),
+        cut!(
+            "pale_oak_log_planks",
+            "minecraft:stripped_pale_oak_log",
+            "minecraft:pale_oak_planks",
+            6
+        ),
+        cut!(
+            "pale_oak_wood_planks",
+            "minecraft:stripped_pale_oak_wood",
+            "minecraft:pale_oak_planks",
+            6
+        ),
+        cut!(
+            "pale_oak_slabs",
+            "minecraft:pale_oak_planks",
+            "minecraft:pale_oak_slab",
+            2
+        ),
+        cut!(
+            "pale_oak_stairs",
+            "minecraft:pale_oak_planks",
+            "minecraft:pale_oak_stairs",
+            1
+        ),
+        cut!(
+            "crimson_strip_log",
+            "minecraft:crimson_stem",
+            "minecraft:stripped_crimson_stem",
+            1
+        ),
+        cut!(
+            "crimson_strip_wood",
+            "minecraft:crimson_hyphae",
+            "minecraft:stripped_crimson_hyphae",
+            1
+        ),
+        cut!(
+            "crimson_log_planks",
+            "minecraft:stripped_crimson_stem",
+            "minecraft:crimson_planks",
+            6
+        ),
+        cut!(
+            "crimson_wood_planks",
+            "minecraft:stripped_crimson_hyphae",
+            "minecraft:crimson_planks",
+            6
+        ),
+        cut!(
+            "crimson_slabs",
+            "minecraft:crimson_planks",
+            "minecraft:crimson_slab",
+            2
+        ),
+        cut!(
+            "crimson_stairs",
+            "minecraft:crimson_planks",
+            "minecraft:crimson_stairs",
+            1
+        ),
+        cut!(
+            "warped_strip_log",
+            "minecraft:warped_stem",
+            "minecraft:stripped_warped_stem",
+            1
+        ),
+        cut!(
+            "warped_strip_wood",
+            "minecraft:warped_hyphae",
+            "minecraft:stripped_warped_hyphae",
+            1
+        ),
+        cut!(
+            "warped_log_planks",
+            "minecraft:stripped_warped_stem",
+            "minecraft:warped_planks",
+            6
+        ),
+        cut!(
+            "warped_wood_planks",
+            "minecraft:stripped_warped_hyphae",
+            "minecraft:warped_planks",
+            6
+        ),
+        cut!(
+            "warped_slabs",
+            "minecraft:warped_planks",
+            "minecraft:warped_slab",
+            2
+        ),
+        cut!(
+            "warped_stairs",
+            "minecraft:warped_planks",
+            "minecraft:warped_stairs",
+            1
+        ),
+    ]
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn ids_are_unique_and_inputs_and_outputs_are_balanced() {
+        let all = recipes();
+        assert_eq!(all.len(), 66);
+        let ids: std::collections::BTreeSet<_> = all.iter().map(|r| r.id).collect();
+        assert_eq!(ids.len(), all.len());
+        assert!(
+            all.iter()
+                .all(|r| r.ingredients[0].count == 1 && r.products[0].count > 0)
+        );
+    }
+    #[test]
+    fn logs_strip_then_produce_six_planks() {
+        let first = recipes()
+            .iter()
+            .find(|r| r.ingredients[0].matcher == "minecraft:oak_log")
+            .unwrap();
+        assert_eq!(first.products[0].id, "minecraft:stripped_oak_log");
+        let next = recipes()
+            .iter()
+            .find(|r| r.ingredients[0].matcher == first.products[0].id)
+            .unwrap();
+        assert_eq!(
+            (next.products[0].id, next.products[0].count),
+            ("minecraft:oak_planks", 6)
+        );
+    }
+    #[test]
+    fn output_filter_selects_stairs_without_matching_slabs() {
+        let r: Vec<_> = recipes()
+            .iter()
+            .filter(|r| {
+                r.ingredients[0].matcher == "minecraft:oak_planks"
+                    && super::super::output_matches(r, Some("minecraft:oak_stairs"))
+            })
+            .collect();
+        assert_eq!(r.len(), 1);
+        assert_eq!(r[0].products[0].id, "minecraft:oak_stairs");
+    }
+}
+
+}
 /// Imported Create recipes plus authored generic fluid-container handlers.
 pub fn active_recipes() -> &'static [Recipe] {
     static ALL: std::sync::OnceLock<Vec<Recipe>> = std::sync::OnceLock::new();
@@ -12502,10 +12967,16 @@ pub fn active_recipes() -> &'static [Recipe] {
         catalog::recipes()
             .iter()
             .chain(containers::recipes())
+            .chain(wood::recipes())
             .copied()
             .collect()
     })
     .as_slice()
+}
+
+/// Output selectors constrain the recipe list before any input can be consumed.
+pub fn output_matches(recipe: &Recipe, filter: Option<&str>) -> bool {
+    filter.is_none_or(|id| recipe.products.iter().any(|p| !p.fluid && p.id == id))
 }
 
 }
@@ -14211,6 +14682,136 @@ mod crusher_tests {
     }
 }
 
+/// A top-facing machine catches a stack only within its own footprint and
+/// close to the authored collision surface. Never captures below/neighbor items.
+pub fn on_processor_top(origin: [i32; 3], height: f64, item: [f64; 3]) -> bool {
+    height.is_finite()
+        && (0.0..=1.0).contains(&height)
+        && item.iter().all(|v| v.is_finite())
+        && (item[0] - f64::from(origin[0]) - 0.5).abs() <= 0.45
+        && (item[2] - f64::from(origin[2]) - 0.5).abs() <= 0.45
+        && (-0.1..=0.25).contains(&(item[1] - f64::from(origin[1]) - height))
+}
+#[cfg(test)]
+mod top_tests {
+    use super::*;
+    #[test]
+    fn top_capture_is_local_and_finite() {
+        assert!(on_processor_top([10, 4, 20], 0.8125, [10.5, 4.8125, 20.5]));
+        assert!(on_processor_top([10, 4, 20], 0.75, [10.5, 4.6875, 20.5]));
+        for at in [
+            [11.5, 4.8125, 20.5],
+            [10.5, 3.8125, 20.5],
+            [10.5, 5.5, 20.5],
+            [f64::NAN, 4.8, 20.5],
+        ] {
+            assert!(!on_processor_top([10, 4, 20], 0.8125, at));
+        }
+        assert!(!on_processor_top([10, 4, 20], 1.1, [10.5, 5.1, 20.5]));
+    }
+    fn bucket() -> Stack {
+        Stack {
+            id: "minecraft:water_bucket".into(),
+            count: 1,
+            components: String::new(),
+        }
+    }
+    #[test]
+    fn loose_bucket_emptying_keeps_real_fluid_and_returns_container() {
+        let mut state = MachineState::default();
+        for _ in 0..100 {
+            let u = work(
+                &state,
+                77,
+                &bucket(),
+                "emptying",
+                32.0,
+                Heat::None,
+                create_simulation::active_recipes(),
+                |_| 64,
+            )
+            .unwrap();
+            state = MachineState::decode(&u.state.encode()).unwrap();
+            if u.result == TickResult::Completed {
+                assert!(u.remaining.is_none());
+                assert_eq!(u.outputs[0].id, "minecraft:bucket");
+                assert_eq!(state.fluid_out.get("minecraft:water"), Some(&1000));
+                return;
+            }
+        }
+        panic!("drain never finished");
+    }
+    #[test]
+    fn full_drain_does_not_consume_world_bucket_or_advance_rng() {
+        let state = MachineState {
+            fluid_out: std::collections::BTreeMap::from([("minecraft:water".into(), 8000)]),
+            ..Default::default()
+        };
+        let original = state.clone();
+        let mut state = state;
+        let mut blocked = None;
+        for _ in 0..100 {
+            let u = work(
+                &state,
+                77,
+                &bucket(),
+                "emptying",
+                32.0,
+                Heat::None,
+                create_simulation::active_recipes(),
+                |_| 64,
+            )
+            .unwrap();
+            state = u.state.clone();
+            if u.result == TickResult::OutputBlocked {
+                blocked = Some(u);
+                break;
+            }
+            assert_ne!(u.result, TickResult::Completed);
+        }
+        let u = blocked.expect("full drain must block completion");
+        assert_eq!(u.remaining, Some(bucket()));
+        assert!(u.outputs.is_empty());
+        assert_eq!(u.state.fluid_out, original.fluid_out);
+        assert_eq!(u.state.rng, original.rng);
+    }
+    #[test]
+    fn top_saw_cuts_one_item_per_cycle_and_keeps_remainder_components() {
+        let input = Stack {
+            id: "minecraft:oak_log".into(),
+            count: 8,
+            components: "named-log".into(),
+        };
+        let mut state = MachineState::default();
+        for _ in 0..200 {
+            let u = work(
+                &state,
+                81,
+                &input,
+                "cutting",
+                32.0,
+                Heat::None,
+                create_simulation::active_recipes(),
+                |_| 64,
+            )
+            .unwrap();
+            state = u.state;
+            if u.result == TickResult::Completed {
+                let remaining = u.remaining.unwrap();
+                assert_eq!(remaining.count, 7);
+                assert_eq!(remaining.components, input.components);
+                assert!(
+                    u.outputs
+                        .iter()
+                        .any(|s| s.id == "minecraft:stripped_oak_log")
+                );
+                return;
+            }
+        }
+        panic!("saw never finished");
+    }
+}
+
 }
 pub mod transport {
 // Flat belt and funnel rules. Item entities/inventories remain owned by the host.
@@ -14432,6 +15033,203 @@ mod mouth_tests {
         assert!(at_mouth(Facing::North, [0.0, 0.0, -0.8]));
         assert!(!at_mouth(Facing::South, [1.0, 0.0, 0.8]));
         assert!(!at_mouth(Facing::South, [0.0, 0.0, -0.8]));
+    }
+}
+
+/// Mouth of a vertical chute. Only falling/resting stacks above its own opening.
+pub fn chute_capture(local: [f64; 3], velocity_y: f64) -> bool {
+    local.iter().all(|v| v.is_finite())
+        && velocity_y.is_finite()
+        && velocity_y <= 0.05
+        && (0.125..=0.875).contains(&local[0])
+        && (0.125..=0.875).contains(&local[2])
+        && (0.95..=1.5).contains(&local[1])
+}
+#[cfg(test)]
+mod chute_tests {
+    use super::*;
+    #[test]
+    fn mouths_capture_only_their_own_falling_lane() {
+        assert!(chute_capture([0.5, 1.0, 0.5], 0.0));
+        assert!(chute_capture([0.5, 1.4, 0.5], -0.5));
+        for (at, v) in [
+            ([1.5, 1.0, 0.5], 0.0),
+            ([0.5, 0.5, 0.5], -0.1),
+            ([0.5, 1.0, 0.5], 0.2),
+            ([f64::NAN, 1.0, 0.5], 0.0),
+        ] {
+            assert!(!chute_capture(at, v));
+        }
+    }
+    #[test]
+    fn a_full_chute_never_removes_the_falling_stack() {
+        let stack = Stack {
+            id: "minecraft:iron_ingot".into(),
+            count: 64,
+            components: "named".into(),
+        };
+        let source = vec![Some(stack.clone())];
+        let into = vec![Some(stack); 27];
+        assert!(super::super::transfer(&source, &into, 64, |_| 64).is_none());
+        assert_eq!(source[0].as_ref().unwrap().count, 64);
+    }
+}
+
+}
+pub mod trees {
+// Bounded stationary saw planning over snapshots of loaded world cells.
+use std::collections::{BTreeSet, VecDeque};
+pub type Pos = [i32; 3];
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum TreeError {
+    NotLog,
+    NoLeaves,
+    Unloaded,
+    TooLarge,
+}
+pub fn family(name: &str) -> Option<&str> {
+    let wood = name.strip_prefix("minecraft:")?.strip_suffix("_log")?;
+    matches!(
+        wood,
+        "oak"
+            | "spruce"
+            | "birch"
+            | "jungle"
+            | "acacia"
+            | "dark_oak"
+            | "mangrove"
+            | "cherry"
+            | "pale_oak"
+    )
+    .then_some(wood)
+}
+/// Refuse oversized/incomplete trees before returning any destructive work.
+/// Only same-family logs at/above the cut and within six blocks horizontally
+/// and 32 vertically are eligible. Ordinary engine breaking supplies the drops.
+pub fn plan(
+    origin: Pos,
+    mut block: impl FnMut(Pos) -> Option<String>,
+) -> Result<Vec<Pos>, TreeError> {
+    let first = block(origin).ok_or(TreeError::Unloaded)?;
+    let wood = family(&first).ok_or(TreeError::NotLog)?;
+    let leaves = format!("minecraft:{wood}_leaves");
+    let mut logs = BTreeSet::from([origin]);
+    let mut seen = BTreeSet::from([origin]);
+    let mut queue = VecDeque::from([origin]);
+    let mut has_leaves = false;
+    while let Some(p) = queue.pop_front() {
+        for dx in -1..=1 {
+            for dy in -1..=1 {
+                for dz in -1..=1 {
+                    if dx == 0 && dy == 0 && dz == 0 {
+                        continue;
+                    }
+                    let q = [
+                        p[0].checked_add(dx).ok_or(TreeError::TooLarge)?,
+                        p[1].checked_add(dy).ok_or(TreeError::TooLarge)?,
+                        p[2].checked_add(dz).ok_or(TreeError::TooLarge)?,
+                    ];
+                    if q[1] < origin[1] || !seen.insert(q) {
+                        continue;
+                    }
+                    if seen.len() > 4096 {
+                        return Err(TreeError::TooLarge);
+                    }
+                    let name = block(q).ok_or(TreeError::Unloaded)?;
+                    if name == leaves {
+                        has_leaves = true;
+                    }
+                    if family(&name) != Some(wood) {
+                        continue;
+                    }
+                    if (i64::from(q[0]) - i64::from(origin[0])).abs() > 6
+                        || (i64::from(q[2]) - i64::from(origin[2])).abs() > 6
+                        || i64::from(q[1]) - i64::from(origin[1]) > 32
+                        || logs.len() >= 128
+                    {
+                        return Err(TreeError::TooLarge);
+                    }
+                    logs.insert(q);
+                    queue.push_back(q);
+                }
+            }
+        }
+    }
+    if !has_leaves {
+        return Err(TreeError::NoLeaves);
+    }
+    let mut result: Vec<_> = logs.into_iter().collect();
+    result.sort_by_key(|p| (std::cmp::Reverse(p[1]), p[0], p[2]));
+    Ok(result)
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::collections::BTreeMap;
+    fn world() -> BTreeMap<Pos, String> {
+        BTreeMap::from([
+            ([0, 0, 0], "minecraft:oak_log".into()),
+            ([0, 1, 0], "minecraft:oak_log".into()),
+            ([1, 2, 0], "minecraft:oak_log".into()),
+            ([2, 2, 0], "minecraft:oak_leaves".into()),
+        ])
+    }
+    fn read(map: &BTreeMap<Pos, String>, p: Pos) -> Option<String> {
+        Some(
+            map.get(&p)
+                .cloned()
+                .unwrap_or_else(|| "minecraft:air".into()),
+        )
+    }
+    #[test]
+    fn diagonal_branches_fall_top_down_and_roots_remain() {
+        let mut m = world();
+        m.insert([0, -1, 0], "minecraft:oak_log".into());
+        let p = plan([0, 0, 0], |p| read(&m, p)).unwrap();
+        assert_eq!(p, vec![[1, 2, 0], [0, 1, 0], [0, 0, 0]]);
+    }
+    #[test]
+    fn bare_pillars_and_stripped_logs_do_not_form_trees() {
+        let mut m = world();
+        m.remove(&[2, 2, 0]);
+        assert_eq!(plan([0, 0, 0], |p| read(&m, p)), Err(TreeError::NoLeaves));
+        m.insert([0, 0, 0], "minecraft:stripped_oak_log".into());
+        assert_eq!(plan([0, 0, 0], |p| read(&m, p)), Err(TreeError::NotLog));
+    }
+    #[test]
+    fn unloaded_neighbors_abort_the_whole_plan() {
+        let m = world();
+        assert_eq!(
+            plan([0, 0, 0], |p| if p[0] < 0 { None } else { read(&m, p) }),
+            Err(TreeError::Unloaded)
+        );
+    }
+    #[test]
+    fn large_trees_abort_instead_of_returning_a_partial_cut() {
+        let mut m = world();
+        for x in 0..=7 {
+            m.insert([x, 2, 0], "minecraft:oak_log".into());
+        }
+        assert_eq!(plan([0, 0, 0], |p| read(&m, p)), Err(TreeError::TooLarge));
+        let mut m = world();
+        for y in 0..=33 {
+            m.insert([0, y, 0], "minecraft:oak_log".into());
+        }
+        assert_eq!(plan([0, 0, 0], |p| read(&m, p)), Err(TreeError::TooLarge));
+    }
+    #[test]
+    fn other_species_and_plank_builds_are_excluded() {
+        let mut m = world();
+        m.insert([-1, 0, 0], "minecraft:birch_log".into());
+        m.insert([0, 0, 1], "minecraft:oak_planks".into());
+        assert_eq!(plan([0, 0, 0], |p| read(&m, p)).unwrap().len(), 3);
+    }
+    #[test]
+    fn coordinate_overflow_is_rejected() {
+        assert_eq!(
+            plan([i32::MAX, 0, 0], |_| Some("minecraft:oak_log".into())),
+            Err(TreeError::TooLarge)
+        );
     }
 }
 
@@ -15457,6 +16255,7 @@ fn process_with_fluid_owner(
         .iter()
         .filter(|r| {
             (r.station == station || (station == "compacting" && r.station == "pressing"))
+                && (station != "cutting" || recipes::output_matches(r,state.item_filter.as_deref()))
                 && r.products
                     .iter()
                     .all(|p| p.fluid || game.items().get(p.id).is_some())
@@ -15834,30 +16633,9 @@ pub(super) fn tick_machines(game: &mut Game<'_>) {
             machines::station(name).filter(|_| !surface_run.handled.contains(p))
         {
             if name == "create:encased_fan" {
-                let face = game
-                    .pack
-                    .assets
-                    .registry
-                    .state(game.world.block(p.0, p.1, p.2))
-                    .and_then(|s| s.properties.get("facing"))
-                    .map(String::as_str)
-                    .unwrap_or("south");
-                let delta = match face {
-                    "north" => [0, 0, -1],
-                    "east" => [1, 0, 0],
-                    "west" => [-1, 0, 0],
-                    "up" => [0, 1, 0],
-                    "down" => [0, -1, 0],
-                    _ => [0, 0, 1],
-                };
-                station = match machine_name(game, (p.0 + delta[0], p.1 + delta[1], p.2 + delta[2]))
-                    .as_str()
-                {
-                    "minecraft:water" => "splashing",
-                    "minecraft:lava" => "blasting",
-                    "minecraft:fire" => "smoking",
-                    "minecraft:soul_fire" => "haunting",
-                    _ => {
+                station = match fan_station(game, *p, facing_step(game, *p)) {
+                    Some(station) => station,
+                    None => {
                         let mut state = read_machine(game, *p);
                         state.status = "NoMedium".into();
                         store_machine(game, *p, state);
@@ -15965,8 +16743,10 @@ pub(super) fn tick_machines(game: &mut Game<'_>) {
             }
         }
         if name == "create:chute" {
+            chute_world_input(game,*p,&surface_run.held);
             move_item(game, (p.0, p.1 + 1, p.2), *p);
             move_item(game, *p, below);
+            chute_world_output(game,*p);
         }
     }
     tick_transport(game, &positions, &solved.speeds, &surface_run.held);
@@ -16730,6 +17510,45 @@ fn tick_transport(
     }
 }
 
+fn chute_world_input(game: &mut Game<'_>, p: MachinePos, held: &BTreeSet<u32>) {
+    let Some(entity)=game.world.block_entities.get(&p) else {return};
+    let before=entity.slots().to_vec();
+    for i in 0..game.dropped.len() {
+        let item=&game.dropped[i];
+        if held.contains(&item.id) || item.target.is_some() || !transport::chute_capture(
+            [item.position.x-p.0 as f64,item.position.y-p.1 as f64,item.position.z-p.2 as f64],item.velocity.y) {continue;}
+        let original=item.stack.clone();
+        let Some((source,dest))=machines::transfer(&portable(&[Some(original.clone())]),&portable(&before),64,
+            |id|game.items().get(id).map_or(1,|i|i.max_stack)) else {continue};
+        let mut originals=before.clone();originals.push(Some(original));
+        let (Some(left),Some(after))=(restore(&source.after,&originals),restore(&dest.after,&originals)) else {continue};
+        let Some(entity)=game.world.block_entities.get_mut(&p) else {return};
+        if entity.slots()!=before {return;}
+        entity.slots_mut().clone_from_slice(&after);
+        if let Some(left)=left.into_iter().next().flatten() {game.dropped[i].stack=left;}else{game.dropped.remove(i);}
+        dirty_machine(game,p);return;
+    }
+}
+fn chute_world_output(game: &mut Game<'_>, p: MachinePos) {
+    let below=(p.0,p.1-1,p.2);
+    if !game.world.loaded(below.0,below.2) || game.world.block_entities.get(&below).is_some_and(|e| !e.slots().is_empty()) {return;}
+    let id=game.world.block(below.0,below.1,below.2);
+    let name=machine_name(game,below);
+    if !game.res.facts().is_air(id) && name!="create:belt" && name!="minecraft:water" {return;}
+    if game.dropped.iter().any(|e|
+        (e.position.x-p.0 as f64-0.5).abs()<0.45 && (e.position.z-p.2 as f64-0.5).abs()<0.45
+        && (e.position.y-p.1 as f64).abs()<0.6) {return;}
+    let Some(entity)=game.world.block_entities.get(&p) else {return};
+    let before=entity.slots().to_vec();
+    let Some((source,dest))=machines::transfer(&portable(&before),&[None],1,|id|game.items().get(id).map_or(1,|i|i.max_stack)) else {return};
+    let (Some(after),Some(out))=(restore(&source.after,&before),restore(&dest.after,&before)) else {return};
+    let Some(stack)=out.into_iter().next().flatten() else {return};
+    let Some(entity)=game.world.block_entities.get_mut(&p) else {return};
+    if entity.slots()!=before {return;}
+    entity.slots_mut().clone_from_slice(&after);dirty_machine(game,p);
+    game.spawn_item(stack,[p.0 as f64+0.5,p.1 as f64-0.05,p.2 as f64+0.5],[0.0,-0.05,0.0],10);
+}
+
 // Canonical host-stack decoding for authored recipe outputs and client previews.
 fn decode_portable_item(stack: &machines::Stack) -> Option<ItemStack> {
     if !recipes::valid_id(&stack.id)
@@ -17017,6 +17836,7 @@ fn tick_surface_machines(
         run.handled.insert(*p);
     }
     tick_crushing_pairs(game, positions, speeds, &mut run);
+    tick_top_processors(game, positions, speeds, &mut run);
     run
 }
 
@@ -17643,4 +18463,122 @@ fn tick_crushing_pairs(
         run.handled.insert(*p);
         run.handled.insert(q);
     }
+}
+
+// Top processors own no extra item inventory: input remains a host dropped stack.
+fn tick_top_processors(
+    game: &mut Game<'_>,
+    positions: &[(MachinePos, String)],
+    speeds: &std::collections::HashMap<[i32; 3], f32>,
+    run: &mut SurfaceRun,
+) {
+    for (p, name) in positions {
+        if name == "create:mechanical_saw" && facing_step(game,*p)[1]==0 && !has_machine_inputs(game,*p) {
+            tick_tree_saw(game,*p,speeds.get(&[p.0,p.1,p.2]).copied().unwrap_or(0.0));
+            run.handled.insert(*p);
+            continue;
+        }
+        let (station, height, rpm) = match name.as_str() {
+            "create:item_drain" => ("emptying", 0.8125, 32.0),
+            "create:mechanical_saw" if facing_step(game, *p) == [0, 1, 0] => {
+                ("cutting", 0.75, speeds.get(&[p.0, p.1, p.2]).copied().unwrap_or(0.0))
+            }
+            _ => continue,
+        };
+        if has_machine_inputs(game, *p) {
+            clear_world_work(game, *p);
+            continue;
+        }
+        let state = read_machine(game, *p);
+        let catalog: Vec<_> = surface_catalog(game, station).into_iter().filter(|r| station != "cutting" || recipes::output_matches(r,state.item_filter.as_deref())).collect();
+        let mut candidates: Vec<_> = game.dropped.iter().enumerate()
+            .filter(|(_, item)| {
+                item.target.is_none() && !run.held.contains(&item.id)
+                    && surface::on_processor_top([p.0,p.1,p.2], height,
+                        [item.position.x,item.position.y,item.position.z])
+                    && {
+                        let input = portable(&[Some(item.stack.clone())]);
+                        surface::recipe(&state,input[0].as_ref().unwrap(),station,&catalog).is_some()
+                    }
+            })
+            .map(|(i,item)| (i,item.id)).collect();
+        candidates.sort_by_key(|(_,id)| (!state.world_target.is_some_and(|b| b.entity == *id),*id));
+        let Some((index,id)) = candidates.first().copied() else {
+            clear_world_work(game,*p);
+            continue;
+        };
+        let before = game.dropped[index].stack.clone();
+        let input = portable(&[Some(before.clone())]);
+        let Ok(mut update) = surface::work(&state,id,input[0].as_ref().unwrap(),station,rpm,
+            machines::Heat::None,&catalog,|id| game.items().get(id).map_or(1,|i| i.max_stack)) else {continue};
+        if update.result == machines::TickResult::NoPower
+            && matches!(state.status.as_str(), "Overstressed" | "Conflict") {
+            update.state.status = state.status.clone();
+        }
+        if !commit_surface_stack(game,index,id,&before,&update) {continue;}
+        if rpm != 0.0 && update.remaining.as_ref().is_some_and(|s|
+            surface::recipe(&update.state,s,station,&catalog).is_some()) {
+            run.held.insert(id);
+            if let Some(item) = game.dropped.iter_mut().find(|e| e.id == id) {
+                item.position.x = p.0 as f64 + 0.5;
+                item.position.z = p.2 as f64 + 0.5;
+                item.velocity.x = 0.0;
+                item.velocity.z = 0.0;
+            }
+        }
+        store_machine(game,*p,update.state);
+        run.handled.insert(*p);
+    }
+}
+
+pub(super) fn use_saw_filter(game: &mut Game<'_>, p: [i32;3]) -> Result<bool> {
+    if game.remote.is_some() || !game.may_build() {return Ok(false);}
+    let pos=(p[0],p[1],p[2]);
+    if machine_name(game,pos)!="create:mechanical_saw" {return Ok(false);}
+    let held=game.held().cloned();
+    let sneaking=game.keys.contains(&winit::keyboard::KeyCode::ShiftLeft);
+    let mut state=read_machine(game,pos);
+    if let Some(held)=held {
+        if sneaking || &*held.item=="create:wrench" || !recipes::active_recipes().iter()
+            .any(|r|r.station=="cutting" && recipes::output_matches(r,Some(&held.item))) {return Ok(false);}
+        state.item_filter=Some(held.item.to_string());
+    } else if sneaking {
+        state.item_filter=None;
+    } else {return Ok(false);}
+    state.progress=0.0;state.recipe=None;state.world_target=None;
+    let text=format!("Saw output filter: {}",state.item_filter.as_deref().unwrap_or("automatic"));
+    store_machine(game,pos,state);transport_notice(game,pos,&text);Ok(true)
+}
+
+fn tick_tree_saw(game: &mut Game<'_>, p: MachinePos, rpm: f32) {
+    let step=facing_step(game,p);
+    if step[1]!=0 || has_machine_inputs(game,p) {return;}
+    let mut state=read_machine(game,p);
+    if rpm==0.0 {return;}
+    let target=offset_machine(p,step,1);
+    let id=game.world.block(target.0,target.1,target.2);
+    if !game.world.loaded(target.0,target.2) || machines::trees::family(&game.res.facts().get(id).name).is_none() {
+        if state.recipe.as_deref()==Some("create:world/tree_felling") {state.progress=0.0;state.recipe=None;store_machine(game,p,state);}
+        return;
+    }
+    if state.recipe.as_deref()!=Some("create:world/tree_felling") {state.progress=0.0;}
+    state.recipe=Some("create:world/tree_felling".into());
+    state.progress=(state.progress+(rpm.abs()/32.0).clamp(0.03125,8.0)).min(20.0);
+    state.status="SawingTree".into();
+    if state.progress>=20.0 {
+        match machines::trees::plan([target.0,target.1,target.2],|q| {
+            game.world.loaded(q[0],q[2]).then(||game.res.facts().get(game.world.block(q[0],q[1],q[2])).name.to_string())
+        }) {
+            Ok(logs)=>{
+                let mut count=0;
+                for q in logs {
+                    if game.destroy_block_dropping(q).is_err() {break;}
+                    count+=1;
+                }
+                state.progress=0.0;state.recipe=None;state.status=format!("Felled {count} logs");
+            }
+            Err(reason)=>{state.progress=0.0;state.status=format!("Tree {reason:?}");}
+        }
+    }
+    store_machine(game,p,state);
 }

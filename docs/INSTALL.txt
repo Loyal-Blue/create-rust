@@ -1,4 +1,4 @@
-Create Rust experimental build: content 0.7.0 + native support 0.5.0
+Create Rust experimental build: content 0.7.1 + native support 0.6.0
 
 Put this .hmod in horizon-mods/ and create-preview-support.hnmod in horizon-native-mods/ for the SAME instance. Replace old copies. Set mod.create:true and mod.create_preview_support:true in horizon-mods.txt. Build through Native Mods -> Build, then launch that build and restart fully after updates.
 
@@ -13,3 +13,5 @@ Machine inputs go in the top row; outputs appear in the middle row. The machine'
 Transport: power straight belts from side shafts. Connect two parallel dry horizontal shafts with a belt connector (max 16-block gap). Funnels face away from their attached inventory; empty-hand click toggles insert/extract. Brass funnels accept an item-ID filter by right-clicking with the item. See docs/TRANSPORT.md in the repository. This version supports flat runs; slopes, junctions and full multiblock belt structures are not implemented.
 
 World processing: presses and spouts work above compatible belt stacks or depots. Depot right-click inserts/collects; sneak empty-hand click opens its inventory. Horizontal inward-turning crushing-wheel pairs process dropped stacks in their gap. Fans move/process items through the appropriate medium. New tank fills accept one fluid, up to 8,000 mB total; pumps support bounded pipe branches. See WORLD_PROCESSING.md and FLUIDS.md in the repository. All clients and server must use the matching native build.
+
+Saw/drain update: powered upward saws cut loose items on top; horizontal saws fell bounded overworld trees with leaves. Hold the desired cutting output and right-click the saw to set its recipe filter; sneak empty-hand click clears it. Item drains empty compatible loose containers resting on their top and stop when fluid storage is full. See docs/WORLD_PROCESSING.md for layout and limits.

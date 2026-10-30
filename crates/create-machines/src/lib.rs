@@ -479,6 +479,7 @@ mod tests;
 pub mod fluids;
 pub mod surface;
 pub mod transport;
+pub mod trees;
 pub mod worldgen;
 
 /// A received rotation phase advanced by elapsed local time, independent of

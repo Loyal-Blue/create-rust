@@ -266,6 +266,7 @@ fn tick_surface_machines(
         run.handled.insert(*p);
     }
     tick_crushing_pairs(game, positions, speeds, &mut run);
+    tick_top_processors(game, positions, speeds, &mut run);
     run
 }
 
@@ -892,4 +893,122 @@ fn tick_crushing_pairs(
         run.handled.insert(*p);
         run.handled.insert(q);
     }
+}
+
+// Top processors own no extra item inventory: input remains a host dropped stack.
+fn tick_top_processors(
+    game: &mut Game<'_>,
+    positions: &[(MachinePos, String)],
+    speeds: &std::collections::HashMap<[i32; 3], f32>,
+    run: &mut SurfaceRun,
+) {
+    for (p, name) in positions {
+        if name == "create:mechanical_saw" && facing_step(game,*p)[1]==0 && !has_machine_inputs(game,*p) {
+            tick_tree_saw(game,*p,speeds.get(&[p.0,p.1,p.2]).copied().unwrap_or(0.0));
+            run.handled.insert(*p);
+            continue;
+        }
+        let (station, height, rpm) = match name.as_str() {
+            "create:item_drain" => ("emptying", 0.8125, 32.0),
+            "create:mechanical_saw" if facing_step(game, *p) == [0, 1, 0] => {
+                ("cutting", 0.75, speeds.get(&[p.0, p.1, p.2]).copied().unwrap_or(0.0))
+            }
+            _ => continue,
+        };
+        if has_machine_inputs(game, *p) {
+            clear_world_work(game, *p);
+            continue;
+        }
+        let state = read_machine(game, *p);
+        let catalog: Vec<_> = surface_catalog(game, station).into_iter().filter(|r| station != "cutting" || recipes::output_matches(r,state.item_filter.as_deref())).collect();
+        let mut candidates: Vec<_> = game.dropped.iter().enumerate()
+            .filter(|(_, item)| {
+                item.target.is_none() && !run.held.contains(&item.id)
+                    && surface::on_processor_top([p.0,p.1,p.2], height,
+                        [item.position.x,item.position.y,item.position.z])
+                    && {
+                        let input = portable(&[Some(item.stack.clone())]);
+                        surface::recipe(&state,input[0].as_ref().unwrap(),station,&catalog).is_some()
+                    }
+            })
+            .map(|(i,item)| (i,item.id)).collect();
+        candidates.sort_by_key(|(_,id)| (!state.world_target.is_some_and(|b| b.entity == *id),*id));
+        let Some((index,id)) = candidates.first().copied() else {
+            clear_world_work(game,*p);
+            continue;
+        };
+        let before = game.dropped[index].stack.clone();
+        let input = portable(&[Some(before.clone())]);
+        let Ok(mut update) = surface::work(&state,id,input[0].as_ref().unwrap(),station,rpm,
+            machines::Heat::None,&catalog,|id| game.items().get(id).map_or(1,|i| i.max_stack)) else {continue};
+        if update.result == machines::TickResult::NoPower
+            && matches!(state.status.as_str(), "Overstressed" | "Conflict") {
+            update.state.status = state.status.clone();
+        }
+        if !commit_surface_stack(game,index,id,&before,&update) {continue;}
+        if rpm != 0.0 && update.remaining.as_ref().is_some_and(|s|
+            surface::recipe(&update.state,s,station,&catalog).is_some()) {
+            run.held.insert(id);
+            if let Some(item) = game.dropped.iter_mut().find(|e| e.id == id) {
+                item.position.x = p.0 as f64 + 0.5;
+                item.position.z = p.2 as f64 + 0.5;
+                item.velocity.x = 0.0;
+                item.velocity.z = 0.0;
+            }
+        }
+        store_machine(game,*p,update.state);
+        run.handled.insert(*p);
+    }
+}
+
+pub(super) fn use_saw_filter(game: &mut Game<'_>, p: [i32;3]) -> Result<bool> {
+    if game.remote.is_some() || !game.may_build() {return Ok(false);}
+    let pos=(p[0],p[1],p[2]);
+    if machine_name(game,pos)!="create:mechanical_saw" {return Ok(false);}
+    let held=game.held().cloned();
+    let sneaking=game.keys.contains(&winit::keyboard::KeyCode::ShiftLeft);
+    let mut state=read_machine(game,pos);
+    if let Some(held)=held {
+        if sneaking || &*held.item=="create:wrench" || !recipes::active_recipes().iter()
+            .any(|r|r.station=="cutting" && recipes::output_matches(r,Some(&held.item))) {return Ok(false);}
+        state.item_filter=Some(held.item.to_string());
+    } else if sneaking {
+        state.item_filter=None;
+    } else {return Ok(false);}
+    state.progress=0.0;state.recipe=None;state.world_target=None;
+    let text=format!("Saw output filter: {}",state.item_filter.as_deref().unwrap_or("automatic"));
+    store_machine(game,pos,state);transport_notice(game,pos,&text);Ok(true)
+}
+
+fn tick_tree_saw(game: &mut Game<'_>, p: MachinePos, rpm: f32) {
+    let step=facing_step(game,p);
+    if step[1]!=0 || has_machine_inputs(game,p) {return;}
+    let mut state=read_machine(game,p);
+    if rpm==0.0 {return;}
+    let target=offset_machine(p,step,1);
+    let id=game.world.block(target.0,target.1,target.2);
+    if !game.world.loaded(target.0,target.2) || machines::trees::family(&game.res.facts().get(id).name).is_none() {
+        if state.recipe.as_deref()==Some("create:world/tree_felling") {state.progress=0.0;state.recipe=None;store_machine(game,p,state);}
+        return;
+    }
+    if state.recipe.as_deref()!=Some("create:world/tree_felling") {state.progress=0.0;}
+    state.recipe=Some("create:world/tree_felling".into());
+    state.progress=(state.progress+(rpm.abs()/32.0).clamp(0.03125,8.0)).min(20.0);
+    state.status="SawingTree".into();
+    if state.progress>=20.0 {
+        match machines::trees::plan([target.0,target.1,target.2],|q| {
+            game.world.loaded(q[0],q[2]).then(||game.res.facts().get(game.world.block(q[0],q[1],q[2])).name.to_string())
+        }) {
+            Ok(logs)=>{
+                let mut count=0;
+                for q in logs {
+                    if game.destroy_block_dropping(q).is_err() {break;}
+                    count+=1;
+                }
+                state.progress=0.0;state.recipe=None;state.status=format!("Felled {count} logs");
+            }
+            Err(reason)=>{state.progress=0.0;state.status=format!("Tree {reason:?}");}
+        }
+    }
+    store_machine(game,p,state);
 }

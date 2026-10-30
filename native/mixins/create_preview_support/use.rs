@@ -6,6 +6,11 @@ fn use_block(game: &mut crate::game::Game<'_>, hit: Option<&crate::game::Hit>) -
             Err(e)=>return core::ops::ControlFlow::Break(Err(e)),
             _=>{}
         }
+        match crate::game::create_runtime::use_saw_filter(game,hit.pos) {
+            Ok(true)=>return core::ops::ControlFlow::Break(Ok(true)),
+            Err(e)=>return core::ops::ControlFlow::Break(Err(e)),
+            _=>{}
+        }
         match crate::game::create_runtime::use_transport(game,hit.pos) {
             Ok(true)=>return core::ops::ControlFlow::Break(Ok(true)),
             Err(e)=>return core::ops::ControlFlow::Break(Err(e)),

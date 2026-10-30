@@ -383,6 +383,7 @@ impl Machine {
 mod tests;
 
 mod containers;
+mod wood;
 /// Imported Create recipes plus authored generic fluid-container handlers.
 pub fn active_recipes() -> &'static [Recipe] {
     static ALL: std::sync::OnceLock<Vec<Recipe>> = std::sync::OnceLock::new();
@@ -390,8 +391,14 @@ pub fn active_recipes() -> &'static [Recipe] {
         catalog::recipes()
             .iter()
             .chain(containers::recipes())
+            .chain(wood::recipes())
             .copied()
             .collect()
     })
     .as_slice()
+}
+
+/// Output selectors constrain the recipe list before any input can be consumed.
+pub fn output_matches(recipe: &Recipe, filter: Option<&str>) -> bool {
+    filter.is_none_or(|id| recipe.products.iter().any(|p| !p.fluid && p.id == id))
 }

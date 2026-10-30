@@ -260,3 +260,56 @@ fn generic_bucket_filling_and_emptying_conserve_a_bucket_of_water() {
     assert_eq!(state.fluid_out["minecraft:water"], 1000);
     assert_eq!(&*slots[9].as_ref().unwrap().item, "minecraft:bucket");
 }
+
+#[test]
+fn world_saw_outputs_and_named_remainder_restore_to_host_stacks() {
+    let input=horizon_client::item_data::parse_stack(r#"{id:"minecraft:stripped_oak_log",count:2,components:{"minecraft:custom_name":{text:"Sawmill batch"}}}"#).unwrap().unwrap();
+    let original=portable(&[Some(input.clone())]);
+    let catalog:Vec<_>=recipes::active_recipes().iter().filter(|r|r.station=="cutting" && recipes::output_matches(r,Some("minecraft:oak_planks"))).copied().collect();
+    let mut state=machines::MachineState::default();
+    for _ in 0..100 {
+        let u=machines::surface::work(&state,91,original[0].as_ref().unwrap(),"cutting",32.0,machines::Heat::None,&catalog,|_|64).unwrap();
+        state=machines::MachineState::decode(&u.state.encode()).unwrap();
+        if u.result==machines::TickResult::Completed {
+            let remaining=restore(&[u.remaining],&[Some(input)]).unwrap();
+            assert_eq!(remaining[0].as_ref().unwrap().count,1);
+            assert_eq!(portable(&remaining)[0].as_ref().unwrap().components,original[0].as_ref().unwrap().components);
+            let output=restore(&u.outputs.into_iter().map(Some).collect::<Vec<_>>(),&[]).unwrap();
+            assert_eq!(&*output[0].as_ref().unwrap().item,"minecraft:oak_planks");assert_eq!(output[0].as_ref().unwrap().count,6);return;
+        }
+    }
+    panic!("host saw did not finish");
+}
+#[test]
+fn loose_bucket_drain_returns_a_real_empty_bucket_and_saved_fluid() {
+    let input=horizon_client::item_data::parse_stack(r#"{id:"minecraft:water_bucket",count:1}"#).unwrap().unwrap();
+    let stack=portable(&[Some(input)]);
+    let mut state=machines::MachineState::default();
+    for _ in 0..100 {
+        let u=machines::surface::work(&state,93,stack[0].as_ref().unwrap(),"emptying",32.0,machines::Heat::None,recipes::active_recipes(),|_|64).unwrap();
+        state=machines::MachineState::decode(&u.state.encode()).unwrap();
+        if u.result==machines::TickResult::Completed {
+            assert!(u.remaining.is_none());
+            let output=restore(&u.outputs.into_iter().map(Some).collect::<Vec<_>>(),&[]).unwrap();
+            assert_eq!(&*output[0].as_ref().unwrap().item,"minecraft:bucket");
+            assert_eq!(state.fluid_out.get("minecraft:water"),Some(&1000));return;
+        }
+    }
+    panic!("host drain did not finish");
+}
+
+#[test]
+fn chute_world_capture_and_discharge_conserve_named_host_items() {
+    let input=named_iron();let original=portable(&[Some(input.clone())]);
+    let (capture,stored)=machines::transfer(&original,&vec![None;27],64,|_|64).unwrap();
+    assert!(capture.after[0].is_none());
+    let mut slots=restore(&stored.after,&[Some(input)]).unwrap();
+    let mut outputs=Vec::new();
+    for _ in 0..3 {
+        let (left,out)=machines::transfer(&portable(&slots),&[None],1,|_|64).unwrap();
+        outputs.extend(restore(&out.after,&slots).unwrap().into_iter().flatten());
+        slots=restore(&left.after,&slots).unwrap();
+    }
+    assert!(slots.iter().all(Option::is_none));assert_eq!(outputs.iter().map(|s|s.count).sum::<u32>(),3);
+    assert!(portable(&outputs.into_iter().map(Some).collect::<Vec<_>>()).iter().flatten().all(|s|s.components==original[0].as_ref().unwrap().components));
+}
