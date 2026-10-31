@@ -1,0 +1,13 @@
+# Mechanical crafting: content 0.9.0 / native 0.10.0
+
+Arrange mechanical crafters into a complete rectangular wall, all facing the same horizontal direction. Up to nine columns and nine rows are supported. Rows run top to bottom and columns left to right when looking directly at the front. The front’s top-left crafter is the controller and collects results in its middle inventory row. A 5×5 recipe needs a full 5×5 wall, including empty crafters at pattern spaces.
+
+Power a crafter from its back/front shaft axis. Neighboring in-plane crafters share drive through meshing gears and count toward stress. Every member must have power; the slowest member’s absolute RPM sets crafting speed. A normal cycle is 100 work units, about 1.25 seconds at 32 RPM at 20 ticks/second. Redstone at any member pauses the entire wall.
+
+Right-click each block to open its real prototype inventory. The first occupied slot of its top row supplies that recipe cell; further input slots are a queue for that cell. Leave an input row empty for a pattern space. Read the output from the top-left block’s middle row. Funnels/hoppers/chutes insert into inputs and extract outputs through the existing machine slot rules. Items are not routed along arrows yet.
+
+The adapter uses the current Horizon recipe table and its container-remainder API, preserving host stack components. It handles ordinary supported crafting recipes and an added symmetric 5×5 crushing-wheel recipe. That large recipe cannot match on a 3×3 table and the host recipe book filters it out at that size. The recipe makes two wheels from the imported Create pattern; the stone choice is the port’s explicit installed stone-type subset. Other original mechanical-only recipes with uninstalled outputs are not included.
+
+Each craft reserves the result and all remainders before changing any member. Buckets/bottles return to their source crafter’s input row. A full remainder destination or output row blocks the whole craft without consuming ingredients. All member inventory snapshots are rechecked before writing. Only the real inventories store items; persisted progress stores bounded material/count bindings. Changed pattern/materials, reduced input counts or a reshaped wall restart work; growing compatible stacks do not starve it.
+
+Incomplete/oversized walls remain inactive. Opposite-facing or different-depth crafters form separate groups. Original input covers, arbitrary shaped networks, adjustable arrows, item animation, lid/cog animation and exact timing/stress rules remain absent. World-dependent special recipes are limited by the host’s default recipe API. The assembled artwork is static. No running-game rendering, physics, save/rejoin, remote-inventory or multiplayer test was performed.

@@ -107,6 +107,7 @@ pub(super) fn placed(
             name.as_str(),
             "create:mechanical_press"
                 | "create:mechanical_mixer"
+                | "create:mechanical_crafter"
                 | "create:millstone"
                 | "create:belt"
                 | "create:andesite_funnel"
@@ -185,6 +186,7 @@ pub(super) fn wrench_block(game: &mut Game<'_>, pos: [i32; 3]) -> Result<bool> {
             s.name.as_str(),
             "create:mechanical_press"
                 | "create:mechanical_mixer"
+                | "create:mechanical_crafter"
                 | "create:millstone"
                 | "create:belt"
                 | "create:andesite_funnel"

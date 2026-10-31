@@ -2,9 +2,9 @@
 
 An independent, unfinished Create-style mod for Horizon Minecraft 26.3. Not affiliated with the Create Team or Horizon.
 
-## Current build: content 0.8.2 + native support 0.9.0
+## Current build: content 0.9.0 + native support 0.10.0
 
-This build connects machinery to server ticks, real inventory slots, chunk saves and client rotation updates. It includes 39 blocks and 37 standalone items. It is an experimental machinery baseline, not a complete port of Create. No running-game verification has been performed.
+This build connects machinery to server ticks, real inventory slots, chunk saves and client rotation updates. It includes 40 blocks and 37 standalone items. It is an experimental machinery baseline, not a complete port of Create. No running-game verification has been performed.
 
 - Directional placement, neighbor shaft alignment, upright press/mixer placement, wrench rotation, migrated saved states and corrected directional model assemblies.
 - Create category on creative inventory page **2**, with page controls above the inventory.
@@ -15,7 +15,11 @@ This build connects machinery to server ticks, real inventory slots, chunk saves
 
 See [functional scope](docs/FUNCTIONAL_SCOPE.md) for per-system behavior and gaps. Sloped/branched belts, contraptions, trains, full world deployer behavior, exact Create tank visuals and GUIs are still absent. The 415-entry recipe catalogue is broader than the installed content; unavailable outputs are filtered before processing.
 
-## World processing in native 0.9.0
+## Mechanical crafting in native 0.10.0
+
+Mechanical crafters form complete horizontal-facing rectangular walls up to 9×9. A connected drive powers the wall, which matches Horizon crafting recipes against its member inputs and commits ingredients, container remainders and outputs together. A 5×5 wall can now automate crushing wheels. See [layout, feeding and output controls](docs/MECHANICAL_CRAFTING.md). Original arrow routing and crafter animations remain absent.
+
+## World processing retained from native 0.9.0
 
 Deployers can place supported plain building cubes two blocks ahead when no inventory recipe matches, and pause under redstone. Top-facing saws cut dropped stacks and horizontal saws fell bounded trees. Item drains empty compatible containers resting on top. Chutes catch falling stacks and discharge items into open space or onto belts. Presses process stacks on belts and bulk-press depot contents. Inward-turning horizontal crushing-wheel pairs catch and bulk-crush loose stacks. Spouts fill loose belt items, water bottles carry their water contents, and generic bucket filling/draining is supported. Fans blow/suck item entities and process them through water, lava, fire or lit campfire/soul-fire streams, bounded by loaded chunks and solid obstacles. Depots capture dropped stacks, display their contents, and accept direct insert/collect interactions. Press heads and mixer partials move with synchronized processing progress and drive phase.
 
@@ -59,7 +63,7 @@ python3 tools/build_content.py --assets-from /path/to/current-private-preview.hm
 python3 tools/build_native.py --output dist/create-preview-support.hnmod
 ```
 
-When upgrading older local assets, use `import_recipe_items.py` and `add_zinc_resources.py` with `--jar /path/to/your-create.jar --assets-from previous.hmod --output next.hmod`, then `prepare_world_models.py --assets-from next.hmod --output corrected.hmod` before the content build. Model preparation requires NumPy and SciPy. Add the transport art with `import_transport.py --jar /path/to/your-create.jar --assets-from corrected.hmod --output transport.hmod`, then run `prepare_moving_parts.py --assets-from transport.hmod --output moving.hmod` and pass that archive to `build_content.py`. The original 1.21.1 Create 6.0.10 JAR is an asset input, not executable code for Horizon. Do not redistribute imported original art without appropriate permission. A public replacement asset set is still needed for an independently redistributable playable release. No Mojang resources are included.
+When upgrading older local assets, use `import_recipe_items.py` and `add_zinc_resources.py` with `--jar /path/to/your-create.jar --assets-from previous.hmod --output next.hmod`, then `prepare_world_models.py --assets-from next.hmod --output corrected.hmod` before the content build. Model preparation requires NumPy and SciPy. Add the transport art with `import_transport.py --jar /path/to/your-create.jar --assets-from corrected.hmod --output transport.hmod`, then run `prepare_moving_parts.py --assets-from transport.hmod --output moving.hmod`, then run `import_crafter.py --jar /path/to/your-create.jar --assets-from moving.hmod --output crafters.hmod` and pass that archive to `build_content.py`. The original 1.21.1 Create 6.0.10 JAR is an asset input, not executable code for Horizon. Do not redistribute imported original art without appropriate permission. A public replacement asset set is still needed for an independently redistributable playable release. No Mojang resources are included.
 
 ## Source and checks
 

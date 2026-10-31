@@ -433,3 +433,24 @@ fn flat_belts_share_drive_and_preserve_world_direction() {
     broken.remove(&[0, 0, 1]);
     assert_eq!(solve(&broken).speeds[&[0, 0, 2]], 0.0);
 }
+
+#[test]
+fn mechanical_crafter_wall_shares_drive_with_alternating_cog_speeds() {
+    use super::state::{Registry, parse_state};
+    let r = Registry::new();
+    let crafter = parse_state(&r, "create:mechanical_crafter[facing=north]").unwrap();
+    let mut motor = parse_state(&r, "create:creative_motor[facing=north]").unwrap();
+    motor.configured_rpm = Some(32.0);
+    let nodes = BTreeMap::from([
+        ([0, 0, 1], motor),
+        ([0, 0, 0], crafter),
+        ([1, 0, 0], crafter),
+        ([0, 1, 0], crafter),
+        ([1, 1, 0], crafter),
+    ]);
+    let solved = solve(&nodes);
+    assert_eq!(solved.speeds[&[0, 0, 0]].abs(), 32.0);
+    assert_eq!(solved.speeds[&[0, 0, 0]], -solved.speeds[&[1, 0, 0]]);
+    assert_eq!(solved.speeds[&[0, 0, 0]], solved.speeds[&[1, 1, 0]]);
+    assert!(parse_state(&r, "create:mechanical_crafter[facing=up]").is_none());
+}

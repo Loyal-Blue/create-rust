@@ -1,4 +1,4 @@
-# Fluid routing: native 0.9.0
+# Fluid routing: native 0.10.0
 
 A pump routes fluid between ports on the two sides of its axis. Positive/negative RPM choose opposite inlet/outlet sides. Pipes can branch and turn through face-adjacent pipe blocks; tanks, basins, spouts, item drains and mechanical mixers are endpoints. Endpoints do not act as additional pipes, and pumps do not traverse other pumps.
 

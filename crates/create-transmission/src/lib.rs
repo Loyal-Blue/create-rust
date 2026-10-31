@@ -68,6 +68,7 @@ pub enum Kind {
     Millstone,
     MechanicalPress,
     MechanicalMixer,
+    MechanicalCrafter,
     MechanicalSaw,
     MechanicalDrill,
     Clutch,
@@ -81,7 +82,7 @@ pub enum Kind {
 }
 
 impl Kind {
-    pub const ALL: [Kind; 21] = [
+    pub const ALL: [Kind; 22] = [
         Kind::Shaft,
         Kind::Cogwheel,
         Kind::LargeCogwheel,
@@ -93,6 +94,7 @@ impl Kind {
         Kind::Millstone,
         Kind::MechanicalPress,
         Kind::MechanicalMixer,
+        Kind::MechanicalCrafter,
         Kind::MechanicalSaw,
         Kind::MechanicalDrill,
         Kind::Clutch,
@@ -119,6 +121,7 @@ impl Kind {
             Kind::Millstone => "millstone",
             Kind::MechanicalPress => "mechanical_press",
             Kind::MechanicalMixer => "mechanical_mixer",
+            Kind::MechanicalCrafter => "mechanical_crafter",
             Kind::MechanicalSaw => "mechanical_saw",
             Kind::MechanicalDrill => "mechanical_drill",
             Kind::Clutch => "clutch",
@@ -143,6 +146,7 @@ impl Kind {
             Kind::Millstone => 4.0,
             Kind::MechanicalPress => 8.0,
             Kind::MechanicalMixer => 4.0,
+            Kind::MechanicalCrafter => 2.0,
             Kind::MechanicalSaw => 4.0,
             Kind::MechanicalDrill => 4.0,
             Kind::CrushingWheel => 8.0,
@@ -312,6 +316,15 @@ pub fn modifier(a: &Node, b: &Node, d: Pos) -> Option<f32> {
     }
     // The axis along which the two sit, when they touch face to face.
     let touching = (manhattan(d) == 1).then(|| d.iter().position(|v| *v != 0).unwrap());
+
+    if a.kind == Kind::MechanicalCrafter
+        && b.kind == Kind::MechanicalCrafter
+        && a.axis == b.axis
+        && touching.is_some()
+        && d[a.axis.index()] == 0
+    {
+        return Some(-1.0);
+    }
 
     // A shaft runs through both: same axis, along it.
     if touching.is_some() && has_shaft_towards(a, d) && has_shaft_towards(b, d.map(|v| -v)) {

@@ -1,0 +1,1 @@
+PASS: real Horizon 5x5 crushing-wheel matching, vanilla-table size filtering, vanilla crafting and three bucket remainders commit through crafter inventories

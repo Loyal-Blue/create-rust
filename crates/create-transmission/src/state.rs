@@ -72,6 +72,13 @@ pub fn parse_state(reg: &Registry, state: &str) -> Option<Node> {
                 node.ports = 3 << (node.axis.index() * 2);
                 node.direction = if positive { 1 } else { -1 };
             }
+            Kind::MechanicalCrafter => {
+                if axis == Axis::Y {
+                    return None;
+                }
+                node.axis = axis;
+                node.ports = 3 << (axis.index() * 2);
+            }
             Kind::MechanicalPress => {
                 node.axis = if axis == Axis::Y { Axis::Z } else { axis };
                 node.ports = 3 << (node.axis.index() * 2);

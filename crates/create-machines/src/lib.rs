@@ -43,6 +43,7 @@ pub struct MachineState {
     pub transfer_limit: u32,
     pub world_target: Option<surface::Binding>,
     pub block_target: Option<[i32; 3]>,
+    pub craft_binding: Option<crafting::Binding>,
 }
 impl Default for MachineState {
     fn default() -> Self {
@@ -70,6 +71,7 @@ impl Default for MachineState {
             transfer_limit: 1,
             world_target: None,
             block_target: None,
+            craft_binding: None,
         }
     }
 }
@@ -100,6 +102,10 @@ impl MachineState {
                 .item_filter
                 .as_deref()
                 .is_some_and(|id| !create_simulation::valid_id(id))
+            || state
+                .craft_binding
+                .as_ref()
+                .is_some_and(|b| b.counts.len() > 81)
             || !valid_tank(&state.fluid_in)
             || !valid_tank(&state.fluid_out)
             || state
@@ -429,6 +435,7 @@ pub fn transfer_fluid(
 pub fn station(block: &str) -> Option<&'static str> {
     Some(match block.strip_prefix("create:")? {
         "millstone" => "milling",
+        "mechanical_crafter" => "crafting",
         "mechanical_press" => "pressing",
         "mechanical_mixer" => "mixing",
         "mechanical_saw" => "cutting",
@@ -478,6 +485,7 @@ pub fn container_size(block: &str) -> Option<usize> {
 #[cfg(test)]
 mod tests;
 
+pub mod crafting;
 pub mod fluids;
 pub mod placing;
 pub mod surface;

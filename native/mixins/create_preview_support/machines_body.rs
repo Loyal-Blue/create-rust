@@ -779,6 +779,7 @@ pub(super) fn tick_machines(game: &mut Game<'_>) {
         }
         store_machine(game, *p, s);
     }
+    let crafting_run=tick_crafting(game,&positions,&solved.speeds);
     let mut fluid_nodes = fluid_topology(game,&positions);
     let tank_groups=shared_tanks(game,&positions,&mut fluid_nodes);
     let surface_run = tick_surface_machines(game, &positions, &solved.speeds);
@@ -790,7 +791,7 @@ pub(super) fn tick_machines(game: &mut Game<'_>) {
         let below = (p.0, p.1 - 1, p.2);
         let mut target = *p;
         if let Some(mut station) =
-            machines::station(name).filter(|_| !surface_run.handled.contains(p))
+            machines::station(name).filter(|_| !surface_run.handled.contains(p) && !crafting_run.contains(p))
         {
             if name == "create:encased_fan" {
                 station = match fan_station(game, *p, facing_step(game, *p)) {
@@ -1148,7 +1149,7 @@ pub(super) fn draw_machine_status(game: &mut Game<'_>, batch: &mut HudBatch) {
         .recipe
         .as_deref()
         .and_then(|id| recipes::active_recipes().iter().find(|r| r.id == id))
-        .map_or_else(|| if s.recipe.as_deref()==Some(machines::placing::RECIPE) {(s.progress*5.0).clamp(0.0,100.0)}else{0.0}, |r| {
+        .map_or_else(|| if s.recipe.as_deref()==Some(machines::placing::RECIPE) {(s.progress*5.0).clamp(0.0,100.0)}else if name=="create:mechanical_crafter" {s.progress.clamp(0.0,100.0)}else{0.0}, |r| {
             (s.progress / r.work.max(1) as f32 * 100.0).clamp(0.0, 100.0)
         });
     let (x, y) = game.inventory_origin(batch);
