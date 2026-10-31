@@ -206,6 +206,34 @@ fn processing(plan: &Value) -> Any {
         .iter()
         .map(|v| (p(&v["pos"]), v))
         .collect();
+    // Reject unsupported feed arrangements rather than shipping an inert demo.
+    let blocks: BTreeMap<P, BlockState> = plan["blocks"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|v| (p(&v["pos"]), bs(v)))
+        .collect();
+    for (&q, m) in &records {
+        if m["name"].as_str().is_some_and(|id| id.ends_with("funnel"))
+            && m["data"]["extracting"] == true
+        {
+            let d = match blocks[&q].properties["facing"].as_str() {
+                "east" => [1, 0, 0],
+                "west" => [-1, 0, 0],
+                "south" => [0, 0, 1],
+                _ => [0, 0, -1],
+            };
+            let front = [q[0] + d[0], q[1], q[2] + d[2]];
+            let back = [q[0] - d[0], q[1], q[2] - d[2]];
+            assert_eq!(
+                blocks[&front].name, "create:belt",
+                "export funnel requires a receiving belt"
+            );
+            assert!(create_runtime::transport::supported_container(
+                &blocks[&back].name
+            ));
+        }
+    }
     let mut checked = 0;
     for case in plan["cases"].as_array().unwrap() {
         let Some(id) = case.get("recipe_id").and_then(Value::as_str) else {
@@ -650,7 +678,7 @@ fn build(input: &Path, out: &Path) -> Any {
     fs::write(
         out.join("validation.json"),
         serde_json::to_vec_pretty(
-            &json!({"chunks":checked,"authored_blocks":authored.len(),"machine_records":plan["machines"].as_array().unwrap().len(),"containers_and_signs":containers.len(),"bays":plan["cases"].as_array().unwrap().len(),"checks":["Horizon compressed-region roundtrip","all authored block states","block entity and inventory codec","machine metadata codec","creative level and spawn roundtrip","drive RPM and paused loads","conflict and overstress networks","actual falling-water flow torque","prefilled recipe transactions and crafter grid"],"gameplay_walkthrough":false}),
+            &json!({"chunks":checked,"authored_blocks":authored.len(),"machine_records":plan["machines"].as_array().unwrap().len(),"containers_and_signs":containers.len(),"bays":plan["cases"].as_array().unwrap().len(),"checks":["Horizon compressed-region roundtrip","all authored block states","block entity and inventory codec","machine metadata codec","creative level and spawn roundtrip","drive RPM and paused loads","conflict and overstress networks","actual falling-water flow torque","prefilled recipe transactions and crafter grid","supported funnel feed destinations"],"gameplay_walkthrough":false}),
         )?,
     )?;
     println!(

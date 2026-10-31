@@ -113,7 +113,7 @@ for dx in range(2):
    if dy==0 and dz==0:state(p,fluid_in={'minecraft:water':8000})
 chest([x+3,65,z+8],{i:('minecraft:water_bucket' if i<4 else 'minecraft:bucket',1 if i<4 else 16) for i in range(8)});case['expected']=['Shared volume starts at 16000 / 96000 mB; any member is a port']
 case,x,z=bay('Item drain')
-p=machine([x+8,65,z+8],'item_drain');chest([x+6,65,z+8],{i:('minecraft:water_bucket',1) for i in range(8)});f=machine([x+7,65,z+8],'brass_funnel',facing='east');state(f,extracting=True,transfer_limit=1);lever(case,[x+7,65,z+9],'north');case['expected']=['Feed one bucket; collect returned bucket on top; 1000 mB stored']
+p=machine([x+8,65,z+8],'item_drain');dropper(case,[x+8,68,z+8],'minecraft:water_bucket',1);inventory([x+8,68,z+8],{i:('minecraft:water_bucket',1) for i in range(8)},'dropper');case['expected']=['Feed one bucket; collect returned bucket on top; 1000 mB stored']
 case,x,z=bay('World deployer')
 p=machine([x+8,65,z+8],'deployer',facing='north');inventory(p,{0:('minecraft:stone',16),1:('minecraft:stone',1,'Do not erase my name')});drive(case,p,back=(0,1,0));put([x+8,64,z+6],'minecraft:gold_block');case['targets']=[{'pos':p,'rpm':32}];case['expected']=['One plain stone is placed above gold target; named input remains']
 case,x,z=bay('5x5 crafting')
@@ -154,7 +154,13 @@ for dx in range(-1,2):
   if dx==0 and dz==0:continue
   put([x+8+dx,68,z+7+dz],'minecraft:oak_leaves',distance=1,persistent=True,waterlogged=False)
 case['targets']=[{'pos':p,'rpm':32}];case['expected']=['Tree logs fall through ordinary engine drops; roots below cut remain']
-# The map covers 5 rows of five bays: all stay within one 192x192 arena.
+# Match signs to the controls actually supplied in the few drive-free bays.
+for case in cases:
+ x,_,z=case['origin'];panel=containers[key([x+3,65,z+2])]
+ if case['title']=='Item drain':panel['lines']=[f"{case['id']} Item drain",'Button = 1 bucket','1000 mB per bucket','Read LAB_GUIDE.md']
+ elif case['title']=='Shared tank':panel['lines']=[f"{case['id']} Shared tank",'16000 / 96000 mB','Use bucket on tank','Read LAB_GUIDE.md']
+ elif case['kind']=='stress':panel['lines']=[f"{case['id']} Crank stress",'Click the crank','Expect overstress','Read LAB_GUIDE.md']
+# The map covers 5 rows of five bays within the bounded lab arena.
 for i,entry in enumerate(config['items']):
  p=[8+(i%16)*3,65,184+(i//16)*3];name=entry['id']
  if name in config['blocks']:
