@@ -77,7 +77,11 @@ struct Items;
 impl Items {
     fn get(&self, id: &str) -> Option<Item> {
         Some(Item {
-            max_stack: if id.ends_with("_axe") { 1 } else { 64 },
+            max_stack: if (id.ends_with("_axe") || id == "create:incomplete_precision_mechanism") {
+                1
+            } else {
+                64
+            },
         })
     }
 }

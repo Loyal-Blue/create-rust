@@ -1,10 +1,156 @@
 // Progress travels inside ordinary item custom data; unrelated components survive.
 use horizon_world::nbt::Tag as AssemblyTag;
-const ASSEMBLY_KEY:&str="create:assembly";
-const CUSTOM_DATA:&str="minecraft:custom_data";
-fn assembly_custom_data(stack:&ItemStack)->std::result::Result<horizon_world::nbt::Compound,String>{let mut values=stack.data().into_iter().flat_map(|d|d.other.iter()).filter(|(key,_)|key==CUSTOM_DATA);let value=values.next();if values.next().is_some(){return Err("Duplicate custom data".into());}match value{None=>Ok(Default::default()),Some((_,AssemblyTag::Compound(map)))=>Ok(map.clone()),_=>Err("Invalid custom data".into())}}
-fn assembly_progress(stack:&ItemStack)->std::result::Result<Option<machines::assembly::Progress>,String>{use machines::assembly::{BASE,INTERMEDIATE,Progress};if !matches!(&*stack.item,BASE|INTERMEDIATE){return Ok(None);}let data=assembly_custom_data(stack)?;let own=data.get(&ASSEMBLY_KEY.into());if &*stack.item==BASE{return if own.is_none(){Ok(Some(Progress::start()))}else{Err("Base item has stale assembly data".into())};}let Some(AssemblyTag::String(s))=own else{return Err("Incomplete item needs assembly progress".into());};let p=Progress::decode(&s.to_string_lossy())?;if p.completed==0{return Err("Incomplete item cannot skip its first operation".into());}Ok(Some(p))}
-fn assembly_output(input:&ItemStack,outcome:machines::assembly::Outcome)->std::result::Result<ItemStack,String>{use machines::assembly::{INTERMEDIATE,Outcome};let mut item=input.clone();item.count=1;let mut data=assembly_custom_data(input)?;match outcome{Outcome::Progress(p)=>{item.item=std::sync::Arc::from(INTERMEDIATE);data.insert(ASSEMBLY_KEY.into(),AssemblyTag::String(p.encode().as_str().into()));},Outcome::Finished(id)=>{item.item=std::sync::Arc::from(id);data.remove(&ASSEMBLY_KEY.into());}}let other=&mut item.data_mut().other;other.retain(|(key,_)|key!=CUSTOM_DATA);if !data.is_empty(){other.push((CUSTOM_DATA.into(),AssemblyTag::Compound(data)));}item.tidy();Ok(item)}
-struct ApplicationCatalog<'a>{regular:&'a [recipes::Recipe],assembly:bool}
-fn application_select(input:&ItemStack,hand:&[Option<machines::Stack>],catalog:&ApplicationCatalog<'_>)->bool{let Ok(progress)=assembly_progress(input)else{return false;};let value=portable(&[Some(input.clone())]);let Some(value)=&value[0]else{return false;};if let Some(progress)=progress{if !catalog.assembly{return false;}let Some(recipe)=progress.recipe()else{return false;};machines::applying::select(value,hand,&[recipe]).is_some()}else{machines::applying::select(value,hand,catalog.regular).is_some()}}
-fn application_work(state:&machines::MachineState,target:machines::applying::Target,input:&ItemStack,hand:&[Option<machines::Stack>],rpm:f32,catalog:&ApplicationCatalog<'_>,limit:impl Fn(&str)->u32)->std::result::Result<Option<machines::applying::Application>,String>{let progress=assembly_progress(input)?;let value=portable(&[Some(input.clone())]);let Some(value)=&value[0]else{return Ok(None);};let Some(progress)=progress else{return machines::applying::work(state,target,value,hand,rpm,catalog.regular,limit);};if !catalog.assembly{return Ok(None);}let recipe=progress.recipe().ok_or("Invalid assembly stage")?;let Some(mut update)=machines::applying::work(state,target,value,hand,rpm,&[recipe],limit)?else{return Ok(None);};if update.result==machines::TickResult::Completed{let outcome=progress.advance(&mut update.state.rng).ok_or("Invalid assembly progress")?;update.outputs=portable(&[Some(assembly_output(input,outcome)?)]).into_iter().flatten().collect();update.state.status=if progress.completed+1==machines::assembly::OPERATIONS{"Assembly finished".into()}else{format!("Assembly {}/{} complete",progress.completed+1,machines::assembly::OPERATIONS)};}else if update.result==machines::TickResult::Working{update.state.status=format!("Assembly {}/{}",progress.completed+1,machines::assembly::OPERATIONS);}Ok(Some(update))}
+const ASSEMBLY_KEY: &str = "create:assembly";
+const CUSTOM_DATA: &str = "minecraft:custom_data";
+fn assembly_custom_data(
+    stack: &ItemStack,
+) -> std::result::Result<horizon_world::nbt::Compound, String> {
+    let mut values = stack
+        .data()
+        .into_iter()
+        .flat_map(|d| d.other.iter())
+        .filter(|(key, _)| key == CUSTOM_DATA);
+    let value = values.next();
+    if values.next().is_some() {
+        return Err("Duplicate custom data".into());
+    }
+    match value {
+        None => Ok(Default::default()),
+        Some((_, AssemblyTag::Compound(map))) => Ok(map.clone()),
+        _ => Err("Invalid custom data".into()),
+    }
+}
+fn assembly_progress(
+    stack: &ItemStack,
+) -> std::result::Result<Option<machines::assembly::Progress>, String> {
+    use machines::assembly::{BASE, INTERMEDIATE, Progress};
+    if !matches!(&*stack.item, BASE | INTERMEDIATE) {
+        return Ok(None);
+    }
+    let data = assembly_custom_data(stack)?;
+    let own = data.get(&ASSEMBLY_KEY.into());
+    if &*stack.item == BASE {
+        return if own.is_none() {
+            Ok(Some(Progress::start()))
+        } else {
+            Err("Base item has stale assembly data".into())
+        };
+    }
+    let Some(AssemblyTag::String(s)) = own else {
+        return Err("Incomplete item needs assembly progress".into());
+    };
+    let p = Progress::decode(&s.to_string_lossy())?;
+    if p.completed == 0 {
+        return Err("Incomplete item cannot skip its first operation".into());
+    }
+    Ok(Some(p))
+}
+fn assembly_output(
+    input: &ItemStack,
+    outcome: machines::assembly::Outcome,
+) -> std::result::Result<ItemStack, String> {
+    use machines::assembly::{INTERMEDIATE, Outcome};
+    let mut item = input.clone();
+    item.count = 1;
+    let mut data = assembly_custom_data(input)?;
+    match outcome {
+        Outcome::Progress(p) => {
+            item.item = std::sync::Arc::from(INTERMEDIATE);
+            data.insert(
+                ASSEMBLY_KEY.into(),
+                AssemblyTag::String(p.encode().as_str().into()),
+            );
+        }
+        Outcome::Finished(id) => {
+            item.item = std::sync::Arc::from(id);
+            data.remove(&ASSEMBLY_KEY.into());
+        }
+    }
+    let other = &mut item.data_mut().other;
+    other.retain(|(key, _)| key != CUSTOM_DATA);
+    if !data.is_empty() {
+        other.push((CUSTOM_DATA.into(), AssemblyTag::Compound(data)));
+    }
+    item.tidy();
+    Ok(item)
+}
+struct ApplicationCatalog<'a> {
+    regular: &'a [recipes::Recipe],
+    assembly: bool,
+}
+fn application_select(
+    input: &ItemStack,
+    hand: &[Option<machines::Stack>],
+    catalog: &ApplicationCatalog<'_>,
+) -> bool {
+    let Ok(progress) = assembly_progress(input) else {
+        return false;
+    };
+    let value = portable(&[Some(input.clone())]);
+    let Some(value) = &value[0] else {
+        return false;
+    };
+    if let Some(progress) = progress {
+        if !catalog.assembly {
+            return false;
+        }
+        let Some(recipe) = progress.recipe() else {
+            return false;
+        };
+        machines::applying::select(value, hand, &[recipe]).is_some()
+    } else {
+        machines::applying::select(value, hand, catalog.regular).is_some()
+    }
+}
+fn application_work(
+    state: &machines::MachineState,
+    target: machines::applying::Target,
+    input: &ItemStack,
+    hand: &[Option<machines::Stack>],
+    rpm: f32,
+    catalog: &ApplicationCatalog<'_>,
+    limit: impl Fn(&str) -> u32,
+) -> std::result::Result<Option<machines::applying::Application>, String> {
+    let progress = assembly_progress(input)?;
+    let value = portable(&[Some(input.clone())]);
+    let Some(value) = &value[0] else {
+        return Ok(None);
+    };
+    let Some(progress) = progress else {
+        return machines::applying::work(state, target, value, hand, rpm, catalog.regular, limit);
+    };
+    if !catalog.assembly {
+        return Ok(None);
+    }
+    let recipe = progress.recipe().ok_or("Invalid assembly stage")?;
+    let Some(mut update) =
+        machines::applying::work(state, target, value, hand, rpm, &[recipe], limit)?
+    else {
+        return Ok(None);
+    };
+    if update.result == machines::TickResult::Completed {
+        let outcome = progress
+            .advance(&mut update.state.rng)
+            .ok_or("Invalid assembly progress")?;
+        update.outputs = portable(&[Some(assembly_output(input, outcome)?)])
+            .into_iter()
+            .flatten()
+            .collect();
+        update.state.status = if progress.completed + 1 == machines::assembly::OPERATIONS {
+            "Assembly finished".into()
+        } else {
+            format!(
+                "Assembly {}/{} complete",
+                progress.completed + 1,
+                machines::assembly::OPERATIONS
+            )
+        };
+    } else if update.result == machines::TickResult::Working {
+        update.state.status = format!(
+            "Assembly {}/{}",
+            progress.completed + 1,
+            machines::assembly::OPERATIONS
+        );
+    }
+    Ok(Some(update))
+}

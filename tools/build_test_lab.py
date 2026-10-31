@@ -10,7 +10,10 @@ if revision!=expected:raise SystemExit(f'Horizon revision mismatch: expected {ex
 with tempfile.TemporaryDirectory(prefix='create-lab-') as tmp:
  t=Path(tmp);(t/'src').mkdir();manifest='[package]\nname="create-automation-lab"\nversion="0.1.0"\nedition="2024"\n[dependencies]\n'
  for name,path in [('horizon-client',a.horizon/'crates/horizon-client'),('horizon-world',a.horizon/'crates/horizon-world'),('horizon-core',a.horizon/'crates/horizon-core'),('create-runtime',r/'crates/create-machines'),('create-simulation',r/'crates/create-recipes'),('create-horizon-core',r/'crates/create-core')]:manifest+=name+'={path='+json.dumps(str(path.resolve()))+(',default-features=false' if name=='horizon-client' else '')+'}\n'
- manifest+='serde_json="1"\n';(t/'Cargo.toml').write_text(manifest);(t/'src/main.rs').write_bytes((r/'tools/lab/world.rs').read_bytes())
+ manifest+='serde_json="1"\n';(t/'Cargo.toml').write_text(manifest)
+ n=r/'native/mixins/create_preview_support';body=(n/'machines_body.rs').read_text();bridge=body[body.index('fn portable('):body.index('fn ensure_machine(')]
+ codec='mod assembly_check {use create_runtime as machines;use create_simulation as recipes;use horizon_client::items::ItemStack;\n'+bridge+(n/'surface_items.rs').read_text()+(n/'assembly_items.rs').read_text()+(r/'tools/lab/assembly.rs').read_text()+'\n}\n'
+ (t/'src/main.rs').write_text(codec+(r/'tools/lab/world.rs').read_text().replace('//!','//'))
  run=['cargo','run','--quiet','--manifest-path',str(t/'Cargo.toml'),'--'];subprocess.run(run+['catalog',str(t/'catalog.json')],check=True)
  subprocess.run(['python3',str(r/'tools/lab/plan.py'),'--catalog',str(t/'catalog.json'),'--output',str(t/'plan.json')],check=True)
  world=t/'Create Rust Automation Lab';subprocess.run(run+['build',str(t/'plan.json'),str(world)],check=True)
