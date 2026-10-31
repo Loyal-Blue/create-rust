@@ -1,4 +1,4 @@
-Create Rust experimental build: content 0.9.2 + native support 0.11.0
+Create Rust experimental build: content 0.10.0 + native support 0.12.0
 
 Put this .hmod in horizon-mods/ and create-preview-support.hnmod in horizon-native-mods/ for the SAME instance. Replace old copies. Set mod.create:true and mod.create_preview_support:true in horizon-mods.txt. Build through Native Mods -> Build, then launch that build and restart fully after updates.
 
@@ -24,6 +24,8 @@ Deployers: supported inventory recipes take priority, otherwise powered deployer
 
 Mechanical crafting: build a complete rectangular wall (up to 9x9), face every crafter the same horizontal direction, and power its shaft axis. Each crafter’s first occupied top-row slot supplies one pattern cell. The top-left member’s middle row collects results. A complete 5x5 wall supports crushing-wheel crafting. See docs/MECHANICAL_CRAFTING.md for queues, remainders and limits.
 
-Automation Lab: a separate saved-world ZIP provides 29 preloaded bays and an all-block gallery for later checks. Its GUIDE and validation record describe the baseline controls and checks. It covers the implemented subset and has not been opened in a running game.
+Automation Lab: a separate saved-world ZIP provides 30 preloaded bays and an all-block gallery for later checks. Its GUIDE and validation record describe the baseline controls and checks. It covers the implemented subset and has not been opened in a running game.
 
 Deployer application update: place target ingredients in a depot/belt two blocks ahead of the hand, with held materials/tools in the deployer input row. A downward deployer at Y=67 works on a surface block at Y=65 and takes X-axis shaft power. Output reservations, redstone pause and processed-output guards are supported. See docs/DEPLOYER_APPLICATION.md for recipe scope and remaining tool/assembly limitations.
+
+Precision assembly: golden sheet + small cog, large cog, iron nugget, repeated five times. Progress is stored on the intermediate item. Bay 30 contains the complete line; final results are weighted and may be byproducts. See docs/SEQUENCED_ASSEMBLY.md.

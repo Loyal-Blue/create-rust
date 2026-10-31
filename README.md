@@ -2,9 +2,9 @@
 
 An independent, unfinished Create-style mod for Horizon Minecraft 26.3. Not affiliated with the Create Team or Horizon.
 
-## Current build: content 0.9.2 + native support 0.11.0
+## Current build: content 0.10.0 + native support 0.12.0
 
-This build connects machinery to server ticks, real inventory slots, chunk saves and client rotation updates. It includes 40 blocks and 37 standalone items. It is an experimental machinery baseline, not a complete port of Create. No running-game verification has been performed.
+This build connects machinery to server ticks, real inventory slots, chunk saves and client rotation updates. It includes 40 blocks and 39 standalone items. It is an experimental machinery baseline, not a complete port of Create. No running-game verification has been performed.
 
 - Directional placement, neighbor shaft alignment, upright press/mixer placement, wrench rotation, migrated saved states and corrected directional model assemblies.
 - Create category on creative inventory page **2**, with page controls above the inventory.
@@ -14,6 +14,10 @@ This build connects machinery to server ticks, real inventory slots, chunk saves
 - Machine progress, fuel, fluids, RPM and phase saved with chunks; existing container storage saves the items. Server snapshots drive client rotation.
 
 See [functional scope](docs/FUNCTIONAL_SCOPE.md) for per-system behavior and gaps. Sloped/branched belts, contraptions, trains, full world deployer behavior, exact Create tank visuals and GUIs are still absent. The 415-entry recipe catalogue is broader than the installed content; unavailable outputs are filtered before processing.
+
+## Precision mechanism assembly in native 0.12.0
+
+Golden sheets now pass through fifteen ordered deployer operations. Per-item intermediate progress survives component-safe transfers, final results use the pinned recipe weights, and blocked depot outputs reserve both inputs and RNG. Two new items use locally imported original sprites. The 30-bay Automation Lab includes a complete preloaded line. See [assembly layouts and limits](docs/SEQUENCED_ASSEMBLY.md). Other sequenced recipes and machine step types remain absent.
 
 ## Deployer applications in native 0.11.0
 

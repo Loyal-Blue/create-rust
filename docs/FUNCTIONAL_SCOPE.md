@@ -1,4 +1,4 @@
-# Functional scope: native 0.11.0
+# Functional scope: native 0.12.0
 
 These are implemented code paths, not claims of in-game validation or exact Java parity.
 
@@ -14,6 +14,7 @@ These are implemented code paths, not claims of in-game validation or exact Java
 | Mechanical mixer | Mixing at supported RPM/heat in basin below; moving whisk/pole/gear | Exact whisk stroke/collision, original speed/timing rules |
 | Millstone, crushing wheel | Container milling/crushing; inward horizontal wheel pairs crush loose stacks in bulk | Full original crushing-controller structure and collision |
 | Mechanical crafter | Powered complete rectangle up to 9x9; Horizon crafting/remainders; reserved multi-inventory commits; 5x5 crushing-wheel recipe | Original arrow routing, input covers, lid/cog/transport animations, arbitrary nonrectangular networks and world-dependent special recipes |
+| Precision assembly | Fifteen ordered deployer operations; per-item saved progress; weighted results; component-safe transfers and output reservations | Other sequences/step types, original metadata/animation and loop routing, arbitrary data-pack loading |
 | Mechanical saw | Container/top-facing loose-stack cutting; output selector; bounded horizontal tree felling | Entity damage, moving contraptions and complete original tree detection |
 | Mechanical drill | Breaks a breakable non-Create block ahead with ordinary drops | Original hardness timing, machine mining, moving contraption use |
 | Encased fan | Inventory, depot and loose-stack processing; bounded item airflow through appropriate media | Parallel exposure tracking, players/mobs and original fan visuals |
@@ -30,9 +31,11 @@ These are implemented code paths, not claims of in-game validation or exact Java
 | Zinc/deepslate zinc ores | Fresh overworld generation, raw zinc drops, smelt/blast zinc | Exact distribution, fortune/silk rules; no retro-generation |
 | Casings, alloy/brass/zinc blocks | Placeable material blocks and recipes | Interactive encasing of drives |
 | Standalone materials/foods/wrench | Registered art, recipes, wrench rotation; explicit food values, tea Haste and XP-nugget use | Exact original effects/food balance; remote XP-nugget use |
-| Creative inventory | 77 entries on page 2 with search | Running-game layout/input verification |
+| Creative inventory | 79 entries on page 2 with search | Running-game layout/input verification |
 | Persistence/network | Chunk metadata for machines; ordinary block-entity item storage; server snapshots | Real save/rejoin/multiplayer verification |
 
-Recipe simulation includes 415 active entries (338 imported recipes plus 11 generic container operations and 66 authored wood-cutting recipes). The adapter only considers recipes whose item outputs exist in the host registry, so uninstalled decorative outputs cannot consume inputs or block supported recipes. The tag matcher, work durations, chances and machine inventories are prototype rules rather than exact Create behavior. Content crafting/smelting uses the engine data pack path.
+Ordinary recipe simulation includes 415 active entries (338 imported recipes plus 11 generic container operations and 66 authored wood-cutting recipes). The adapter only considers recipes whose item outputs exist in the host registry, so uninstalled decorative outputs cannot consume inputs or block supported recipes. The tag matcher, work durations, chances and machine inventories are prototype rules rather than exact Create behavior. Content crafting/smelting uses the engine data pack path.
 
-Sloped/branched belts, tunnels, sequenced assembly world machines, schematics, moving contraptions, bearings, pistons, elevators, trains and most of Create's decorative/content catalogue are not implemented. They require substantial further work.
+Sloped/branched belts, tunnels, other sequenced assembly recipes/step types, schematics, moving contraptions, bearings, pistons, elevators, trains and most of Create's decorative/content catalogue are not implemented. They require substantial further work.
+
+Precision assembly is a separate ordered recipe path, outside the 415 ordinary entries. See SEQUENCED_ASSEMBLY.md.
