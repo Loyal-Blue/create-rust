@@ -1,8 +1,9 @@
-Plan: 29 bays, 1138 authored blocks, 91 containers/signs, 266 machine records
+Plan: 30 bays, 1211 authored blocks, 109 containers/signs, 306 machine records
 Wheel [88, 67, 128]: nonzero torque from Horizon falling-water flow
 Wheel [120, 68, 128]: nonzero torque from Horizon falling-water flow
 PASS: all labelled drive RPMs, source conflict, crank overstress, paused loads and both water flows
 PASS: 4 deployer demo batches, held-material counts, retained named tool and depot/belt support geometry
 PASS: 5 prefilled recipes complete transactionally; crafter grid and two complete input patterns match
+PASS: 16 full 15-operation assembly runs; production component/save codecs; five of each held material per input; outputs {"create:precision_mechanism": 14, "minecraft:gold_nugget": 2}
 PASS: 192 compressed chunks, all blocks/containers/machine records and creative level metadata roundtrip
 create-rust-test-lab.zip

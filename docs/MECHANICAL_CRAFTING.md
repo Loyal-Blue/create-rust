@@ -1,4 +1,4 @@
-# Mechanical crafting: content 0.9.2 / native 0.11.0
+# Mechanical crafting: content 0.10.0 / native 0.12.0
 
 Arrange mechanical crafters into a complete rectangular wall, all facing the same horizontal direction. Up to nine columns and nine rows are supported. Rows run top to bottom and columns left to right when looking directly at the front. The front’s top-left crafter is the controller and collects results in its middle inventory row. A 5×5 recipe needs a full 5×5 wall, including empty crafters at pattern spaces.
 

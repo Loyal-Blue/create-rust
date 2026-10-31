@@ -22,7 +22,7 @@ struct TabItem { id: String, name: String }
 
 fn validate(config: &Config) -> crate::Result<()> {
     if config.schema != 1 || config.blocks.len() < 34 || config.blocks.len() > 4096 || config.items.is_empty() || config.items.len() > 4096 || config.blocks.get("create:creative_motor").is_none_or(|v| !v.contains_key("north")) {
-        return Err("Create support needs the matching 0.9.x content preview".into());
+        return Err("Create support needs the matching Create content preview".into());
     }
     for variants in config.blocks.values() {
         for boxes in variants.values() {
@@ -157,7 +157,7 @@ fn replace(root: &Path, relative: &str, bytes: &[u8]) -> crate::Result<()> {
 
 pub(super) fn apply(root: &Path) -> crate::Result<()> {
     let path = root.join("data/create/create_preview/support.json");
-    if !path.exists() { return Err("Install Create content preview 0.9.x alongside Create Preview Support".into()); }
+    if !path.exists() { return Err("Install the matching Create content preview alongside Create Preview Support".into()); }
     let config: Config = serde_json::from_slice(&fs::read(path)?)?;
     validate(&config)?;
     let mut changed = BTreeMap::new();

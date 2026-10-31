@@ -165,6 +165,15 @@ case,x,z=bay('Reusable axe')
 p=machine([x+8,67,z+8],'deployer',facing='down');inventory(p,{0:('minecraft:iron_axe',1,'Reusable test axe')});drive(case,p,back=(1,0,0));depot=machine([x+8,65,z+8],'depot');inventory(depot,{0:('minecraft:exposed_copper',8)});case['targets']=[{'pos':p,'rpm':32}];case['application']={'deployer':p,'target':depot,'input':'minecraft:exposed_copper','count':8,'output':'minecraft:copper_block','hand_used':0};case['expected']=['8 copper blocks appear in depot output; named axe remains unchanged']
 case,x,z=bay('Casing application')
 p=machine([x+8,67,z+8],'deployer',facing='down');inventory(p,{0:('create:andesite_alloy',8)});drive(case,p,back=(1,0,0));depot=machine([x+8,65,z+8],'depot');inventory(depot,{0:('minecraft:stripped_oak_log',8)});case['targets']=[{'pos':p,'rpm':32}];case['application']={'deployer':p,'target':depot,'input':'minecraft:stripped_oak_log','count':8,'output':'create:andesite_casing','hand_used':8};case['expected']=['8 stripped logs and held alloys become andesite casings in depot output']
+case,x,z=bay('Precision assembly')
+controllers=[]
+for stage in range(15):
+ p=machine([x+6+stage,67,z+8],'deployer',facing='down');inventory(p,{0:(["create:cogwheel","create:large_cogwheel","minecraft:iron_nugget"][stage%3],16)});controllers.append(p)
+drive(case,controllers[-1],back=(1,0,0))
+for dx in range(5,22):machine([x+dx,65,z+8],'belt',facing='east')
+drive(case,[x+5,65,z+8]);source=chest([x+3,65,z+8],{0:('create:golden_sheet',16)});f=machine([x+4,65,z+8],'brass_funnel',facing='east');state(f,extracting=True,transfer_limit=1);lever(case,[x+4,65,z+9],'north')
+chest([x+23,65,z+8],{});f=machine([x+22,65,z+8],'brass_funnel',facing='west');state(f,extracting=False,transfer_limit=16)
+case['targets']=[{'pos':controllers[-1],'rpm':32},{'pos':[x+21,65,z+8],'rpm':32}];case['assembly']={'controllers':controllers,'input':source,'count':16};case['expected']=['Run both drives, then release feed. Fifteen deployers perform five cog/large-cog/nugget cycles; 16 final weighted outputs reach east chest. Progress travels with intermediate items.']
 # Match signs to the controls actually supplied in the few drive-free bays.
 for case in cases:
  x,_,z=case['origin'];panel=containers[key([x+3,65,z+2])]
@@ -183,7 +192,7 @@ for i,entry in enumerate(config['items']):
   if name=='create:creative_motor':state(p,motor_rpm=0)
 # Tool/sample stores near spawn, three full registry chests and a vanilla kit.
 for group in range(3):
- entries=config['items'][group*27:(group+1)*27];chest([8+group*3,65,12],{i:(v['id'],1 if 'bucket' in v['id'] or v['id'].endswith('wrench') else 16) for i,v in enumerate(entries)})
+ entries=config['items'][group*27:(group+1)*27];chest([8+group*3,65,12],{i:(v['id'],1 if 'bucket' in v['id'] or v['id'].endswith('wrench') or v['id']=='create:incomplete_precision_mechanism' else 16) for i,v in enumerate(entries)})
 chest([18,65,12],{0:('create:wrench',1),1:('minecraft:diamond_pickaxe',1),2:('minecraft:bucket',16),3:('minecraft:water_bucket',1),4:('minecraft:lava_bucket',1),5:('minecraft:coal',64),6:('create:blaze_cake',16),7:('minecraft:glass_bottle',16),8:('minecraft:iron_ingot',64),9:('minecraft:andesite',64),10:('create:andesite_alloy',64),11:('minecraft:stone',64)})
 sign([8,65,8],['CREATE RUST LAB','Development world','Not a complete port','Read LAB_GUIDE.md'])
 sign([18,65,9],['Registry chests','Wrench and tools','All cases prefilled','Levers ON = paused'])

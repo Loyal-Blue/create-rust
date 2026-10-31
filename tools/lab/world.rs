@@ -460,6 +460,7 @@ fn build(input: &Path, out: &Path) -> Any {
         .collect();
     networks(&plan, &authored)?;
     processing(&plan)?;
+    assembly_check::verify(&plan)?;
     let mut all = BTreeMap::new();
     let w = plan["width"].as_i64().unwrap() as i32;
     let l = plan["length"].as_i64().unwrap() as i32;
@@ -773,7 +774,7 @@ fn build(input: &Path, out: &Path) -> Any {
     fs::write(
         out.join("validation.json"),
         serde_json::to_vec_pretty(
-            &json!({"chunks":checked,"authored_blocks":authored.len(),"machine_records":plan["machines"].as_array().unwrap().len(),"containers_and_signs":containers.len(),"bays":plan["cases"].as_array().unwrap().len(),"checks":["Horizon compressed-region roundtrip","all authored block states","block entity and inventory codec","machine metadata codec","creative level and spawn roundtrip","drive RPM and paused loads","conflict and overstress networks","actual falling-water flow torque","prefilled recipe transactions and crafter grid","supported funnel feed destinations","deployer application batches and held-tool retention"],"gameplay_walkthrough":false}),
+            &json!({"chunks":checked,"authored_blocks":authored.len(),"machine_records":plan["machines"].as_array().unwrap().len(),"containers_and_signs":containers.len(),"bays":plan["cases"].as_array().unwrap().len(),"checks":["Horizon compressed-region roundtrip","all authored block states","block entity and inventory codec","machine metadata codec","creative level and spawn roundtrip","drive RPM and paused loads","conflict and overstress networks","actual falling-water flow torque","prefilled recipe transactions and crafter grid","supported funnel feed destinations","deployer application batches and held-tool retention","15-operation precision assembly with real saved item components"],"gameplay_walkthrough":false}),
         )?,
     )?;
     println!(

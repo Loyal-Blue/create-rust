@@ -16,8 +16,8 @@ fn tick_deployer_application(
     };
     let hand_before = entity.slots().to_vec();
     let hand = portable(&hand_before);
-    let mut catalog = surface_catalog(game, "deploying");
-    catalog.extend(surface_catalog(game, "item_application"));
+    let mut regular = surface_catalog(game, "deploying");
+    regular.extend(surface_catalog(game, "item_application"));
     // A complete recipe in the machine's own inventory keeps its old priority.
     let mut stock = recipes::Stock {
         slots: usize::MAX,
@@ -26,10 +26,16 @@ fn tick_deployer_application(
     for s in hand.iter().take(9).flatten() {
         *stock.items.entry(s.id.clone()).or_default() += s.count;
     }
-    if recipes::matching_recipe(&stock, "deploying", &catalog).is_some() {
+    if recipes::matching_recipe(&stock, "deploying", &regular).is_some() {
         clear_world_work(game, p);
         return false;
     }
+    let catalog = ApplicationCatalog {
+        regular: &regular,
+        assembly: std::iter::once(machines::assembly::INTERMEDIATE)
+            .chain(machines::assembly::RESULTS.iter().map(|(id, _)| *id))
+            .all(|id| game.items().get(id).is_some()),
+    };
     let step = facing_step(game, p);
     let Some(target) = machines::placing::target([p.0, p.1, p.2], step) else {
         return false;
@@ -90,19 +96,19 @@ fn tick_deployer_application(
         };
         let before = e.slots().to_vec();
         let slots = portable(&before);
-        let Some(slot) = slots.iter().take(9).position(|s| {
+        let Some(slot) = before.iter().take(9).position(|s| {
             s.as_ref()
-                .is_some_and(|s| machines::applying::select(s, &hand, &catalog).is_some())
+                .is_some_and(|s| application_select(s, &hand, &catalog))
         }) else {
             continue;
         };
-        let Ok(Some(update)) = machines::applying::work(
+        let Ok(Some(update)) = application_work(
             &state,
             machines::applying::Target {
                 entity: 0,
                 position: [q.0, q.1, q.2],
             },
-            slots[slot].as_ref().unwrap(),
+            before[slot].as_ref().unwrap(),
             &hand,
             rpm,
             &catalog,
@@ -185,7 +191,7 @@ fn tick_deployer_application(
                 .as_ref()
                 .is_some_and(|s| {
                     !machines::applying::applied(&state, item.id, s)
-                        && machines::applying::select(s, &hand, &catalog).is_some()
+                        && application_select(&item.stack, &hand, &catalog)
                 })
         })
         .map(|(i, e)| (i, e.id, e.stack.clone()));
@@ -193,14 +199,13 @@ fn tick_deployer_application(
         clear_world_work(game, p);
         return false;
     };
-    let input = portable(&[Some(before.clone())]);
-    let Ok(Some(mut update)) = machines::applying::work(
+    let Ok(Some(mut update)) = application_work(
         &state,
         machines::applying::Target {
             entity: id,
             position: target,
         },
-        input[0].as_ref().unwrap(),
+        &before,
         &hand,
         rpm,
         &catalog,
@@ -250,10 +255,12 @@ fn tick_deployer_application(
     }
 
     if rpm != 0.
-        && update
-            .remaining
-            .as_ref()
-            .is_some_and(|s| machines::applying::select(s, &update.hand.after, &catalog).is_some())
+        && update.remaining.is_some()
+        && game
+            .dropped
+            .iter()
+            .find(|e| e.id == id)
+            .is_some_and(|e| application_select(&e.stack, &update.hand.after, &catalog))
     {
         run.held.insert(id);
         if let Some(item) = game.dropped.iter_mut().find(|e| e.id == id) {

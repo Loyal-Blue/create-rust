@@ -1,4 +1,4 @@
-# Deployer applications: native 0.11.0
+# Deployer applications: native 0.12.0
 
 A powered deployer can apply materials or reusable tools to loose stacks on a flat belt or to inputs in a depot. Put held materials/tools in the deployer's top inventory row. Two-item `deploying` and `item_application` recipes are supported when their outputs exist in the installed registry. The first recipe ingredient belongs to the target; the second comes from the deployer. A complete deploying recipe stored in the deployer's own input row keeps its earlier priority.
 
@@ -18,4 +18,4 @@ The Automation Lab has four dedicated application bays: depot cogwheels, belt co
 
 Its headless checker completes their seeded batches and checks material counts, tool retention, drive speeds and support geometry.
 
-Remaining gaps: general player-like use/attack, original durability rules, component-dependent recipes, fluid/heat applications, moving contraptions, arm animation and sequenced-assembly state. Reusable tools currently retain their damage rather than wearing out. This feature does not claim Java Create parity.
+Remaining gaps: general player-like use/attack, original durability rules, component-dependent recipes, fluid/heat applications, moving contraptions, arm animation and additional sequenced recipes/step types. Precision mechanisms now have an ordered path; see SEQUENCED_ASSEMBLY.md. Reusable tools currently retain their damage rather than wearing out. This feature does not claim Java Create parity.
