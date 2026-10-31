@@ -340,6 +340,101 @@ fn processing(plan: &Value) -> Any {
             }
         }
     }
+    let mut applications = 0;
+    for case in plan["cases"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|c| c.get("application").is_some())
+    {
+        let c = &case["application"];
+        let controller = p(&c["deployer"]);
+        let surface = [controller[0], controller[1] - 2, controller[2]];
+        assert_eq!(blocks[&controller].properties["facing"], "down");
+        assert!(matches!(
+            blocks[&surface].name.as_str(),
+            "create:belt" | "create:depot"
+        ));
+        let mut hands = vec![None; 27];
+        for item in containers[&controller]["items"].as_array().unwrap() {
+            hands[item["slot"].as_u64().unwrap() as usize] = Some(create_runtime::Stack {
+                id: item["id"].as_str().unwrap().into(),
+                count: item["count"].as_u64().unwrap() as u32,
+                components: item.get("name").map_or(String::new(), |n| {
+                    json!({"minecraft:custom_name":{"text":n}}).to_string()
+                }),
+            });
+        }
+        let initial = hands.clone();
+        let mut slots = vec![None; 27];
+        slots[0] = Some(create_runtime::Stack {
+            id: c["input"].as_str().unwrap().into(),
+            count: c["count"].as_u64().unwrap() as u32,
+            components: String::new(),
+        });
+        let depot = c.get("target").is_some();
+        if depot {
+            let q = p(&c["target"]);
+            assert_eq!(q, surface);
+            let seed = &containers[&q]["items"][0];
+            assert_eq!(seed["id"], c["input"]);
+            assert_eq!(seed["count"], c["count"]);
+        }
+        let mut state = MachineState::default();
+        let mut products = 0;
+        for _ in 0..20000 {
+            let Some(input) = slots[0].as_ref() else {
+                break;
+            };
+            let u = create_runtime::applying::work(
+                &state,
+                create_runtime::applying::Target {
+                    entity: 17,
+                    position: surface,
+                },
+                input,
+                &hands,
+                32.,
+                create_simulation::active_recipes(),
+                |_| 64,
+            )?
+            .expect("application recipe");
+            let (u, after) = if depot {
+                let (u, plan) = u.depot(&slots, 0, |_| 64)?;
+                (u, Some(plan))
+            } else {
+                (u, None)
+            };
+            if u.result == create_runtime::TickResult::Completed {
+                products += u
+                    .outputs
+                    .iter()
+                    .filter(|s| s.id == c["output"].as_str().unwrap())
+                    .map(|s| s.count)
+                    .sum::<u32>();
+            }
+            state = MachineState::decode(&u.state.encode()).unwrap();
+            let remaining = u.remaining.clone();
+            assert!(u.hand.commit(&mut hands));
+            if let Some(plan) = after {
+                assert!(plan.commit(&mut slots));
+            } else {
+                slots[0] = remaining;
+            }
+        }
+        assert!(slots[0].is_none(), "deployer demo stalled");
+        assert_eq!(products, c["count"].as_u64().unwrap() as u32);
+        let before: u32 = initial[..9].iter().flatten().map(|s| s.count).sum();
+        let after: u32 = hands[..9].iter().flatten().map(|s| s.count).sum();
+        assert_eq!(before - after, c["hand_used"].as_u64().unwrap() as u32);
+        if c["hand_used"] == 0 {
+            assert_eq!(initial, hands, "retained tool changed");
+        }
+        applications += 1;
+    }
+    println!(
+        "PASS: {applications} deployer demo batches, held-material counts, retained named tool and depot/belt support geometry"
+    );
     println!(
         "PASS: {checked} prefilled recipes complete transactionally; crafter grid and two complete input patterns match"
     );
@@ -678,7 +773,7 @@ fn build(input: &Path, out: &Path) -> Any {
     fs::write(
         out.join("validation.json"),
         serde_json::to_vec_pretty(
-            &json!({"chunks":checked,"authored_blocks":authored.len(),"machine_records":plan["machines"].as_array().unwrap().len(),"containers_and_signs":containers.len(),"bays":plan["cases"].as_array().unwrap().len(),"checks":["Horizon compressed-region roundtrip","all authored block states","block entity and inventory codec","machine metadata codec","creative level and spawn roundtrip","drive RPM and paused loads","conflict and overstress networks","actual falling-water flow torque","prefilled recipe transactions and crafter grid","supported funnel feed destinations"],"gameplay_walkthrough":false}),
+            &json!({"chunks":checked,"authored_blocks":authored.len(),"machine_records":plan["machines"].as_array().unwrap().len(),"containers_and_signs":containers.len(),"bays":plan["cases"].as_array().unwrap().len(),"checks":["Horizon compressed-region roundtrip","all authored block states","block entity and inventory codec","machine metadata codec","creative level and spawn roundtrip","drive RPM and paused loads","conflict and overstress networks","actual falling-water flow torque","prefilled recipe transactions and crafter grid","supported funnel feed destinations","deployer application batches and held-tool retention"],"gameplay_walkthrough":false}),
         )?,
     )?;
     println!(

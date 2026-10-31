@@ -903,6 +903,10 @@ fn tick_top_processors(
     run: &mut SurfaceRun,
 ) {
     for (p, name) in positions {
+        if name=="create:deployer" && tick_deployer_application(game,*p,speeds.get(&[p.0,p.1,p.2]).copied().unwrap_or(0.0),run) {
+            run.handled.insert(*p);
+            continue;
+        }
         if name=="create:deployer" && tick_deployer_placement(game,*p,speeds.get(&[p.0,p.1,p.2]).copied().unwrap_or(0.0)) {
             run.handled.insert(*p);
             continue;

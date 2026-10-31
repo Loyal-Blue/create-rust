@@ -16,6 +16,7 @@ with tempfile.TemporaryDirectory(prefix='create-support-tests-') as tmp:
     (t / 'src').mkdir()
     dependencies = {
         'horizon-world': a.horizon.resolve() / 'crates/horizon-world',
+        'horizon-core': a.horizon.resolve() / 'crates/horizon-core',
         'horizon-items': a.horizon.resolve() / 'crates/horizon-items',
         'horizon-client-core': a.horizon.resolve() / 'crates/horizon-client-core',
         'create-runtime': r / 'crates/create-machines',
@@ -34,7 +35,14 @@ with tempfile.TemporaryDirectory(prefix='create-support-tests-') as tmp:
     source += (n / 'migrate.rs').read_text() + '\n#[cfg(test)]mod tests{' + (r / 'tests/native_migration.rs').read_text() + '}}\n'
     source += '#[cfg(test)] mod bridge { use create_runtime as machines; use create_simulation as recipes; use horizon_items::items::ItemStack;\n'
     source += 'mod horizon_client {pub use horizon_items::item_data;pub use horizon_client_core::snbt;}\n'
-    source += bridge + (n / 'surface_items.rs').read_text() + '\nmod tests {\n' + (r / 'tests/native_machine_bridge.rs').read_text() + '\n}}\n'
+    bridge_visible = bridge.replace('fn portable(', 'pub(super) fn portable(').replace('fn restore(', 'pub(super) fn restore(')
+    source += bridge_visible + (n / 'surface_items.rs').read_text() + '\nmod tests {\n' + (r / 'tests/native_machine_bridge.rs').read_text() + '\n}}\n'
+    # Compile the production application adapter against a minimal isolated host
+    # model, using real Horizon stacks and the same surface commit function.
+    surface_body = (n / 'surface_body.rs').read_text()
+    commit = surface_body[surface_body.index('fn commit_surface_stack('):surface_body.index('fn tick_depots(')]
+    source += '#[cfg(test)] mod application_host {use create_runtime as machines;use create_simulation as recipes;use super::bridge::{portable,restore};use horizon_items::items::ItemStack;mod horizon_client {pub use horizon_items::item_data;}\n'
+    source += (r / 'tests/deployer_host.rs').read_text() + '\n' + commit + (n / 'applying_body.rs').read_text() + '\n}\n'
     assets = t / 'food-assets'
     (assets / 'data/minecraft/loot_table').mkdir(parents=True)
     for kind in ['block', 'item', 'entity_type']:

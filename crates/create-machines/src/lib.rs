@@ -42,6 +42,7 @@ pub struct MachineState {
     pub item_filter: Option<String>,
     pub transfer_limit: u32,
     pub world_target: Option<surface::Binding>,
+    pub applied_entities: Vec<surface::Binding>,
     pub block_target: Option<[i32; 3]>,
     pub craft_binding: Option<crafting::Binding>,
 }
@@ -70,6 +71,7 @@ impl Default for MachineState {
             item_filter: None,
             transfer_limit: 1,
             world_target: None,
+            applied_entities: Vec::new(),
             block_target: None,
             craft_binding: None,
         }
@@ -106,6 +108,8 @@ impl MachineState {
                 .craft_binding
                 .as_ref()
                 .is_some_and(|b| b.counts.len() > 81)
+            || state.applied_entities.len() > 128
+            || state.applied_entities.iter().any(|b| b.count == 0)
             || !valid_tank(&state.fluid_in)
             || !valid_tank(&state.fluid_out)
             || state
@@ -485,6 +489,7 @@ pub fn container_size(block: &str) -> Option<usize> {
 #[cfg(test)]
 mod tests;
 
+pub mod applying;
 pub mod crafting;
 pub mod fluids;
 pub mod placing;

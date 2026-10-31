@@ -154,15 +154,26 @@ for dx in range(-1,2):
   if dx==0 and dz==0:continue
   put([x+8+dx,68,z+7+dz],'minecraft:oak_leaves',distance=1,persistent=True,waterlogged=False)
 case['targets']=[{'pos':p,'rpm':32}];case['expected']=['Tree logs fall through ordinary engine drops; roots below cut remain']
+case,x,z=bay('Depot deployer')
+p=machine([x+10,67,z+8],'deployer',facing='down');inventory(p,{0:('minecraft:oak_planks',16)});drive(case,p,back=(1,0,0));depot=machine([x+10,65,z+8],'depot');inventory(depot,{0:('create:shaft',16)});case['targets']=[{'pos':p,'rpm':32}];case['application']={'deployer':p,'target':depot,'input':'create:shaft','count':16,'output':'create:cogwheel','hand_used':16};case['expected']=['16 shafts plus held planks become 16 cogwheels in depot output row']
+case,x,z=bay('Belt deployer')
+for dx in range(6,15):machine([x+dx,65,z+8],'belt',facing='east')
+drive(case,[x+6,65,z+8]);p=machine([x+10,67,z+8],'deployer',facing='down');inventory(p,{0:('minecraft:oak_planks',32)});drive(case,p,back=(1,0,0))
+chest([x+4,65,z+8],{0:('create:shaft',32)});f=machine([x+5,65,z+8],'brass_funnel',facing='east');state(f,extracting=True,transfer_limit=16);lever(case,[x+5,65,z+9],'north')
+chest([x+16,65,z+8],{});f=machine([x+15,65,z+8],'brass_funnel',facing='west');state(f,item_filter='create:cogwheel');case['targets']=[{'pos':p,'rpm':32},{'pos':[x+14,65,z+8],'rpm':32}];case['application']={'deployer':p,'input':'create:shaft','count':32,'output':'create:cogwheel','hand_used':32};case['expected']=['Run both drives, release feed: 32 shafts become cogwheels in east chest']
+case,x,z=bay('Reusable axe')
+p=machine([x+8,67,z+8],'deployer',facing='down');inventory(p,{0:('minecraft:iron_axe',1,'Reusable test axe')});drive(case,p,back=(1,0,0));depot=machine([x+8,65,z+8],'depot');inventory(depot,{0:('minecraft:exposed_copper',8)});case['targets']=[{'pos':p,'rpm':32}];case['application']={'deployer':p,'target':depot,'input':'minecraft:exposed_copper','count':8,'output':'minecraft:copper_block','hand_used':0};case['expected']=['8 copper blocks appear in depot output; named axe remains unchanged']
+case,x,z=bay('Casing application')
+p=machine([x+8,67,z+8],'deployer',facing='down');inventory(p,{0:('create:andesite_alloy',8)});drive(case,p,back=(1,0,0));depot=machine([x+8,65,z+8],'depot');inventory(depot,{0:('minecraft:stripped_oak_log',8)});case['targets']=[{'pos':p,'rpm':32}];case['application']={'deployer':p,'target':depot,'input':'minecraft:stripped_oak_log','count':8,'output':'create:andesite_casing','hand_used':8};case['expected']=['8 stripped logs and held alloys become andesite casings in depot output']
 # Match signs to the controls actually supplied in the few drive-free bays.
 for case in cases:
  x,_,z=case['origin'];panel=containers[key([x+3,65,z+2])]
  if case['title']=='Item drain':panel['lines']=[f"{case['id']} Item drain",'Button = 1 bucket','1000 mB per bucket','Read LAB_GUIDE.md']
  elif case['title']=='Shared tank':panel['lines']=[f"{case['id']} Shared tank",'16000 / 96000 mB','Use bucket on tank','Read LAB_GUIDE.md']
  elif case['kind']=='stress':panel['lines']=[f"{case['id']} Crank stress",'Click the crank','Expect overstress','Read LAB_GUIDE.md']
-# The map covers 5 rows of five bays within the bounded lab arena.
+# The map covers 6 rows of machinery bays within the bounded lab arena.
 for i,entry in enumerate(config['items']):
- p=[8+(i%16)*3,65,184+(i//16)*3];name=entry['id']
+ p=[8+(i%16)*3,65,224+(i//16)*3];name=entry['id']
  if name in config['blocks']:
   props={}
   variants=config['blocks'][name]
@@ -176,5 +187,5 @@ for group in range(3):
 chest([18,65,12],{0:('create:wrench',1),1:('minecraft:diamond_pickaxe',1),2:('minecraft:bucket',16),3:('minecraft:water_bucket',1),4:('minecraft:lava_bucket',1),5:('minecraft:coal',64),6:('create:blaze_cake',16),7:('minecraft:glass_bottle',16),8:('minecraft:iron_ingot',64),9:('minecraft:andesite',64),10:('create:andesite_alloy',64),11:('minecraft:stone',64)})
 sign([8,65,8],['CREATE RUST LAB','Development world','Not a complete port','Read LAB_GUIDE.md'])
 sign([18,65,9],['Registry chests','Wrench and tools','All cases prefilled','Levers ON = paused'])
-plan={'schema':1,'name':'Create Rust Automation Lab','width':192,'length':208,'spawn':[8,65,5],'blocks':list(blocks.values()),'containers':list(containers.values()),'machines':list(states.values()),'cases':cases,'registered_items':len(config['items']),'registered_blocks':list(config['blocks'])}
+plan={'schema':1,'name':'Create Rust Automation Lab','width':192,'length':248,'spawn':[8,65,5],'blocks':list(blocks.values()),'containers':list(containers.values()),'machines':list(states.values()),'cases':cases,'registered_items':len(config['items']),'registered_blocks':list(config['blocks'])}
 a.output.parent.mkdir(parents=True,exist_ok=True);a.output.write_text(json.dumps(plan,indent=2)+'\n');print(f"Plan: {len(cases)} bays, {len(blocks)} authored blocks, {len(containers)} containers/signs, {len(states)} machine records")

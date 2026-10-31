@@ -333,3 +333,23 @@ fn deployer_placement_plan_roundtrips_real_host_inventory() {
     }
     panic!("deployer plan did not finish");
 }
+
+#[test]
+fn deployer_application_restores_real_named_tool_and_depot_snapshots() {
+    let axe=horizon_client::item_data::parse_stack(r#"{id:"minecraft:iron_axe",count:1,components:{"minecraft:damage":7,"minecraft:custom_name":{text:"Keep this tool"}}}"#).unwrap().unwrap();
+    let input=horizon_client::item_data::parse_stack(r#"{id:"minecraft:exposed_copper",count:2,components:{"minecraft:custom_name":{text:"Target remainder"}}}"#).unwrap().unwrap();
+    let mut hand=vec![None;27];hand[0]=Some(axe);hand[9]=Some(named_iron());
+    let mut depot=vec![None;27];depot[0]=Some(input);
+    let mut originals=hand.clone();originals.extend(depot.clone());
+    let hands=portable(&hand);let slots=portable(&depot);let mut state=machines::MachineState::default();
+    for _ in 0..100 {
+        let u=machines::applying::work(&state,machines::applying::Target{entity:0,position:[4,65,6]},slots[0].as_ref().unwrap(),&hands,32.,recipes::active_recipes(),|_|64).unwrap().unwrap();
+        state=machines::MachineState::decode(&u.state.encode()).unwrap();
+        if u.result==machines::TickResult::Completed {
+            let (u,p)=u.depot(&slots,0,|_|64).unwrap();let restored=restore(&u.hand.after,&originals).unwrap();assert_eq!(restored,hand);
+            let output=restore(&p.after,&originals).unwrap();assert_eq!(output[0].as_ref().unwrap().count,1);assert_eq!(portable(&output)[0].as_ref().unwrap().components,slots[0].as_ref().unwrap().components);
+            assert_eq!(&*output[9].as_ref().unwrap().item,"minecraft:copper_block");assert!(output[9].as_ref().unwrap().data().is_none());return;
+        }
+    }
+    panic!("live-stack application did not complete");
+}
