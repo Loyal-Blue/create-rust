@@ -490,6 +490,7 @@ pub fn container_size(block: &str) -> Option<usize> {
 mod tests;
 
 pub mod applying;
+pub mod assembly;
 pub mod crafting;
 pub mod fluids;
 pub mod placing;
