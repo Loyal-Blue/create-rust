@@ -1,0 +1,9 @@
+Plan: 25 bays, 993 authored blocks, 78 containers/signs, 234 machine records
+Wheel [88, 67, 128]: nonzero torque from Horizon falling-water flow
+Wheel [120, 68, 128]: nonzero torque from Horizon falling-water flow
+PASS: all labelled drive RPMs, source conflict, crank overstress, paused loads and both water flows
+PASS: 5 prefilled recipes complete transactionally; crafter grid and two complete input patterns match
+PASS: 156 compressed chunks, all blocks/containers/machine records and creative level metadata roundtrip
+Output: create-rust-test-lab.zip
+
+No running-game walkthrough was performed.

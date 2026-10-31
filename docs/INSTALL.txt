@@ -1,4 +1,4 @@
-Create Rust experimental build: content 0.9.0 + native support 0.10.0
+Create Rust experimental build: content 0.9.1 + native support 0.10.1
 
 Put this .hmod in horizon-mods/ and create-preview-support.hnmod in horizon-native-mods/ for the SAME instance. Replace old copies. Set mod.create:true and mod.create_preview_support:true in horizon-mods.txt. Build through Native Mods -> Build, then launch that build and restart fully after updates.
 
@@ -23,3 +23,5 @@ Shared tanks: complete 1x1, 2x2 or 3x3 square footprints up to 32 layers combine
 Deployers: supported inventory recipes take priority, otherwise powered deployers place plain supported building cubes two blocks ahead through a clear loaded air gap. Redstone pauses work. Named/component-bearing items and devices are refused. See docs/WORLD_PROCESSING.md for the whitelist and remaining limitations.
 
 Mechanical crafting: build a complete rectangular wall (up to 9x9), face every crafter the same horizontal direction, and power its shaft axis. Each crafter’s first occupied top-row slot supplies one pattern cell. The top-left member’s middle row collects results. A complete 5x5 wall supports crushing-wheel crafting. See docs/MECHANICAL_CRAFTING.md for queues, remainders and limits.
+
+Automation Lab: a separate saved-world ZIP provides 25 preloaded bays and an all-block gallery for later checks. Its GUIDE and validation record describe the baseline controls and checks. It covers the implemented subset and has not been opened in a running game.

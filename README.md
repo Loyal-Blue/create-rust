@@ -2,7 +2,7 @@
 
 An independent, unfinished Create-style mod for Horizon Minecraft 26.3. Not affiliated with the Create Team or Horizon.
 
-## Current build: content 0.9.0 + native support 0.10.0
+## Current build: content 0.9.1 + native support 0.10.1
 
 This build connects machinery to server ticks, real inventory slots, chunk saves and client rotation updates. It includes 40 blocks and 37 standalone items. It is an experimental machinery baseline, not a complete port of Create. No running-game verification has been performed.
 
@@ -14,6 +14,10 @@ This build connects machinery to server ticks, real inventory slots, chunk saves
 - Machine progress, fuel, fluids, RPM and phase saved with chunks; existing container storage saves the items. Server snapshots drive client rotation.
 
 See [functional scope](docs/FUNCTIONAL_SCOPE.md) for per-system behavior and gaps. Sloped/branched belts, contraptions, trains, full world deployer behavior, exact Create tank visuals and GUIs are still absent. The 415-entry recipe catalogue is broader than the installed content; unavailable outputs are filtered before processing.
+
+## Automation Lab in native 0.10.1
+
+A generated creative save contains 25 preloaded test bays, a 40-block gallery, all 77 registered items, labelled pause/feed controls, waterfalls, destructive targets and a complete 5x5 crafter wall. Its writer uses real pinned Horizon level/chunk/region and block-entity codecs, verifies the saved data and solves every labelled kinetic circuit. Mechanical pumps now mesh with a small cog so a drive can coexist with both occupied pipe ports. See [the lab guide](docs/TEST_LAB.md) and [validation](docs/VALIDATION.md). This has not been opened in a running game.
 
 ## Mechanical crafting in native 0.10.0
 

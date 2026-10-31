@@ -582,7 +582,7 @@ impl Kind {
     pub fn is_small_cog(self) -> bool {
         matches!(
             self,
-            Kind::Cogwheel | Kind::Millstone | Kind::MechanicalMixer
+            Kind::Cogwheel | Kind::Millstone | Kind::MechanicalMixer | Kind::MechanicalPump
         )
     }
 
@@ -13762,6 +13762,39 @@ fn transport_settings_roundtrip_and_old_saves_keep_defaults() {
     bad = state;
     bad.item_filter = Some("invalid".into());
     assert!(MachineState::decode(&bad.encode()).is_err());
+}
+
+#[test]
+fn pump_meshes_with_a_cog_while_both_pipe_ports_stay_connected() {
+    use kinetics::state::{Registry, parse_state};
+    let r = Registry::new();
+    let pump = parse_state(&r, "create:mechanical_pump[facing=east]").unwrap();
+    let cog = parse_state(&r, "create:cogwheel[axis=x]").unwrap();
+    let mut motor = parse_state(&r, "create:creative_motor[facing=west]").unwrap();
+    motor.configured_rpm = Some(32.0);
+    motor.direction = -1;
+    let solved = kinetics::solve(&BTreeMap::from([
+        ([0, 0, 0], pump),
+        ([0, 1, 0], cog),
+        ([1, 1, 0], motor),
+    ]));
+    let rpm = solved.speeds[&[0, 0, 0]];
+    assert_eq!(rpm, 32.0);
+    let nodes = BTreeMap::from([
+        ([-1, 0, 0], fluids::Node::SourceWater),
+        ([1, 0, 0], fluids::Node::Pipe),
+        ([2, 0, 0], fluids::Node::Port { single: true }),
+    ]);
+    let flow = fluids::flow(
+        &nodes,
+        &BTreeMap::from([([2, 0, 0], MachineState::default())]),
+        [0, 0, 0],
+        kinetics::Axis::X,
+        rpm,
+        0,
+    );
+    assert_eq!(flow.amount, 128);
+    assert_eq!(flow.states[&[2, 0, 0]].fluid_in["minecraft:water"], 128);
 }
 
 }

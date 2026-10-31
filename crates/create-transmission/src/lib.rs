@@ -185,7 +185,7 @@ impl Kind {
     pub fn is_small_cog(self) -> bool {
         matches!(
             self,
-            Kind::Cogwheel | Kind::Millstone | Kind::MechanicalMixer
+            Kind::Cogwheel | Kind::Millstone | Kind::MechanicalMixer | Kind::MechanicalPump
         )
     }
 

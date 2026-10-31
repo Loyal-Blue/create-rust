@@ -1,4 +1,4 @@
-# Functional scope: native 0.10.0
+# Functional scope: native 0.10.1
 
 These are implemented code paths, not claims of in-game validation or exact Java parity.
 
