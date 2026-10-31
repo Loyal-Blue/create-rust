@@ -42,6 +42,7 @@ pub struct MachineState {
     pub item_filter: Option<String>,
     pub transfer_limit: u32,
     pub world_target: Option<surface::Binding>,
+    pub block_target: Option<[i32; 3]>,
 }
 impl Default for MachineState {
     fn default() -> Self {
@@ -68,6 +69,7 @@ impl Default for MachineState {
             item_filter: None,
             transfer_limit: 1,
             world_target: None,
+            block_target: None,
         }
     }
 }
@@ -477,6 +479,7 @@ pub fn container_size(block: &str) -> Option<usize> {
 mod tests;
 
 pub mod fluids;
+pub mod placing;
 pub mod surface;
 pub mod tanks;
 pub mod transport;

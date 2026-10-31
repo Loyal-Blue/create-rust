@@ -1,23 +1,24 @@
-running 20 tests
+running 21 tests
 test bridge::tests::depot_display_codec_preserves_components_without_registering_items ... ok
-test bridge::tests::funnel_world_stack_and_machine_pipeline_preserves_items ... ok
-test bridge::tests::unpowered_host_items_and_components_stay_unchanged ... ok
-test bridge::tests::water_filling_creates_a_real_water_bottle_with_correct_contents ... ok
-test bridge::tests::generic_bucket_filling_and_emptying_conserve_a_bucket_of_water ... ok
-test bridge::tests::retained_host_tool_keeps_damage_and_components ... ok
-test food::authored_food_components_load_through_horizon ... ok
-test bridge::tests::loose_bucket_drain_returns_a_real_empty_bucket_and_saved_fluid ... ok
-test bridge::tests::world_saw_outputs_and_named_remainder_restore_to_host_stacks ... ok
-test migration::tests::legacy_upright_machine_stays_upright ... ok
-test migration::tests::modern_facing_is_preserved ... ok
 test bridge::tests::chute_world_capture_and_discharge_conserve_named_host_items ... ok
-test migration::tests::legacy_motor_axis_and_waterlogging_migrate ... ok
+test bridge::tests::unpowered_host_items_and_components_stay_unchanged ... ok
+test bridge::tests::deployer_placement_plan_roundtrips_real_host_inventory ... ok
+test bridge::tests::generic_bucket_filling_and_emptying_conserve_a_bucket_of_water ... ok
+test bridge::tests::funnel_world_stack_and_machine_pipeline_preserves_items ... ok
+test bridge::tests::retained_host_tool_keeps_damage_and_components ... ok
+test bridge::tests::water_filling_creates_a_real_water_bottle_with_correct_contents ... ok
+test bridge::tests::loose_bucket_drain_returns_a_real_empty_bucket_and_saved_fluid ... ok
+test food::authored_food_components_load_through_horizon ... ok
 test support::tests::create_category_is_on_page_two_only ... ok
-test support::tests::motor_body_replaces_chain_shape_and_preserves_vanilla ... ok
+test migration::tests::modern_facing_is_preserved ... ok
+test migration::tests::legacy_upright_machine_stays_upright ... ok
+test migration::tests::legacy_motor_axis_and_waterlogging_migrate ... ok
+test bridge::tests::world_saw_outputs_and_named_remainder_restore_to_host_stacks ... ok
 test support::tests::create_tab_and_search_have_all_items_without_duplicates ... ok
-test support::tests::overlay_replacement_does_not_modify_symlink_target ... ok
+test support::tests::motor_body_replaces_chain_shape_and_preserves_vanilla ... ok
 test support::authored::current_content_shapes_and_items_validate ... ok
-test bridge::tests::bulk_surface_processing_uses_real_named_host_stacks ... ok
+test support::tests::overlay_replacement_does_not_modify_symlink_target ... ok
 test bridge::tests::real_host_item_components_roundtrip_through_press ... ok
+test bridge::tests::bulk_surface_processing_uses_real_named_host_stacks ... ok
 
-test result: ok. 20 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+test result: ok. 21 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s

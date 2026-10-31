@@ -903,6 +903,10 @@ fn tick_top_processors(
     run: &mut SurfaceRun,
 ) {
     for (p, name) in positions {
+        if name=="create:deployer" && tick_deployer_placement(game,*p,speeds.get(&[p.0,p.1,p.2]).copied().unwrap_or(0.0)) {
+            run.handled.insert(*p);
+            continue;
+        }
         if name == "create:mechanical_saw" && facing_step(game,*p)[1]==0 && !has_machine_inputs(game,*p) {
             tick_tree_saw(game,*p,speeds.get(&[p.0,p.1,p.2]).copied().unwrap_or(0.0));
             run.handled.insert(*p);

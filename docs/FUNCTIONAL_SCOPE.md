@@ -1,4 +1,4 @@
-# Functional scope: native 0.8.0
+# Functional scope: native 0.9.0
 
 These are implemented code paths, not claims of in-game validation or exact Java parity.
 
@@ -16,7 +16,7 @@ These are implemented code paths, not claims of in-game validation or exact Java
 | Mechanical saw | Container/top-facing loose-stack cutting; output selector; bounded horizontal tree felling | Entity damage, moving contraptions and complete original tree detection |
 | Mechanical drill | Breaks a breakable non-Create block ahead with ordinary drops | Original hardness timing, machine mining, moving contraption use |
 | Encased fan | Inventory, depot and loose-stack processing; bounded item airflow through appropriate media | Parallel exposure tracking, players/mobs and original fan visuals |
-| Deployer | Container deploying recipes; retained catalysts preserve damage/components | Player-like block/entity interactions and world arm animation |
+| Deployer | Container deploying recipes; retained catalysts preserve damage/components; powered placement of plain supported building cubes, with redstone pause | Full player-like use/attack, directional/device placement, crops, contraptions and arm animation |
 | Basin, depot | Persistent 27-slot storage; visible depot stack, dropped-item capture and direct depot interactions | Exact original depot capacity, basin geometry/fluid display |
 | Blaze burner | Coal/charcoal/blaze-rod heat; blaze-cake superheat | Capturing blazes, original heat transitions and visuals |
 | Fluid tank | Shared complete 1x1/2x2/3x3 square tanks up to 32 layers; 8,000 mB per block; any-member bucket/pump access; legacy contents retained | Original tank model states, fluid rendering, connectivity rules and remote bucket controls |

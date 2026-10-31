@@ -2,7 +2,7 @@
 
 An independent, unfinished Create-style mod for Horizon Minecraft 26.3. Not affiliated with the Create Team or Horizon.
 
-## Current build: content 0.8.1 + native support 0.8.0
+## Current build: content 0.8.2 + native support 0.9.0
 
 This build connects machinery to server ticks, real inventory slots, chunk saves and client rotation updates. It includes 39 blocks and 37 standalone items. It is an experimental machinery baseline, not a complete port of Create. No running-game verification has been performed.
 
@@ -15,9 +15,9 @@ This build connects machinery to server ticks, real inventory slots, chunk saves
 
 See [functional scope](docs/FUNCTIONAL_SCOPE.md) for per-system behavior and gaps. Sloped/branched belts, contraptions, trains, full world deployer behavior, exact Create tank visuals and GUIs are still absent. The 415-entry recipe catalogue is broader than the installed content; unavailable outputs are filtered before processing.
 
-## World processing in native 0.8.0
+## World processing in native 0.9.0
 
-Top-facing saws cut dropped stacks and horizontal saws fell bounded trees. Item drains empty compatible containers resting on top. Chutes catch falling stacks and discharge items into open space or onto belts. Presses process stacks on belts and bulk-press depot contents. Inward-turning horizontal crushing-wheel pairs catch and bulk-crush loose stacks. Spouts fill loose belt items, water bottles carry their water contents, and generic bucket filling/draining is supported. Fans blow/suck item entities and process them through water, lava, fire or lit campfire/soul-fire streams, bounded by loaded chunks and solid obstacles. Depots capture dropped stacks, display their contents, and accept direct insert/collect interactions. Press heads and mixer partials move with synchronized processing progress and drive phase.
+Deployers can place supported plain building cubes two blocks ahead when no inventory recipe matches, and pause under redstone. Top-facing saws cut dropped stacks and horizontal saws fell bounded trees. Item drains empty compatible containers resting on top. Chutes catch falling stacks and discharge items into open space or onto belts. Presses process stacks on belts and bulk-press depot contents. Inward-turning horizontal crushing-wheel pairs catch and bulk-crush loose stacks. Spouts fill loose belt items, water bottles carry their water contents, and generic bucket filling/draining is supported. Fans blow/suck item entities and process them through water, lava, fire or lit campfire/soul-fire streams, bounded by loaded chunks and solid obstacles. Depots capture dropped stacks, display their contents, and accept direct insert/collect interactions. Press heads and mixer partials move with synchronized processing progress and drive phase.
 
 Pumps can draw from renewable water sources beside their intake or connected pipes. Builder’s tea grants Haste through the ordinary consumable system; snacks have explicit food values and native XP nuggets grant experience. See [item behavior](docs/FOODS.md).
 

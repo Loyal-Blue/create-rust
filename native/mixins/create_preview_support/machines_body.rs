@@ -1148,7 +1148,7 @@ pub(super) fn draw_machine_status(game: &mut Game<'_>, batch: &mut HudBatch) {
         .recipe
         .as_deref()
         .and_then(|id| recipes::active_recipes().iter().find(|r| r.id == id))
-        .map_or(0.0, |r| {
+        .map_or_else(|| if s.recipe.as_deref()==Some(machines::placing::RECIPE) {(s.progress*5.0).clamp(0.0,100.0)}else{0.0}, |r| {
             (s.progress / r.work.max(1) as f32 * 100.0).clamp(0.0, 100.0)
         });
     let (x, y) = game.inventory_origin(batch);

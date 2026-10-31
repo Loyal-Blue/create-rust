@@ -313,3 +313,23 @@ fn chute_world_capture_and_discharge_conserve_named_host_items() {
     assert!(slots.iter().all(Option::is_none));assert_eq!(outputs.iter().map(|s|s.count).sum::<u32>(),3);
     assert!(portable(&outputs.into_iter().map(Some).collect::<Vec<_>>()).iter().flatten().all(|s|s.components==original[0].as_ref().unwrap().components));
 }
+
+#[test]
+fn deployer_placement_plan_roundtrips_real_host_inventory() {
+    let named=horizon_client::item_data::parse_stack(r#"{id:"minecraft:stone",count:1,components:{"minecraft:custom_name":{text:"Keep this name"}}}"#).unwrap().unwrap();
+    let mut named_slots=vec![None;27];named_slots[0]=Some(named);
+    assert!(machines::placing::plan(&machines::MachineState::default(),&portable(&named_slots),[2,0,0],32.0).is_none());
+    let input=horizon_client::item_data::parse_stack(r#"{id:"minecraft:stone",count:5}"#).unwrap().unwrap();
+    let mut slots=vec![None;27];slots[0]=Some(input);slots[9]=Some(named_iron());
+    let original=portable(&slots);let mut state=machines::MachineState::default();
+    for _ in 0..100 {
+        let p=machines::placing::plan(&state,&original,[2,0,0],32.0).unwrap();
+        state=machines::MachineState::decode(&p.state.encode()).unwrap();
+        if p.result==machines::TickResult::Completed {
+            let after=restore(&p.inventory.after,&slots).unwrap();assert_eq!(after[0].as_ref().unwrap().count,4);
+            assert_eq!(portable(&after)[9],original[9]);
+            assert!(machines::placing::plan(&state,&vec![None;27],[2,0,0],32.0).is_none());return;
+        }
+    }
+    panic!("deployer plan did not finish");
+}

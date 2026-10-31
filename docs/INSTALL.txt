@@ -1,4 +1,4 @@
-Create Rust experimental build: content 0.8.1 + native support 0.8.0
+Create Rust experimental build: content 0.8.2 + native support 0.9.0
 
 Put this .hmod in horizon-mods/ and create-preview-support.hnmod in horizon-native-mods/ for the SAME instance. Replace old copies. Set mod.create:true and mod.create_preview_support:true in horizon-mods.txt. Build through Native Mods -> Build, then launch that build and restart fully after updates.
 
@@ -19,3 +19,5 @@ Saw/drain update: powered upward saws cut loose items on top; horizontal saws fe
 Water/items: pumps or connected pipes can draw from adjacent supported renewable water sources (two source-water neighbors). Tea grants Haste and returns its bottle. Snacks have authored food values. On the local host, right-click an XP nugget for 3 XP. See docs/FLUIDS.md and docs/FOODS.md for limits.
 
 Shared tanks: complete 1x1, 2x2 or 3x3 square footprints up to 32 layers combine storage (8,000 mB/block). Use buckets or pump pipes on any member. Sneak empty-hand click reports total volume/capacity. Mixed legacy and malformed structures stay independent. Read docs/FLUIDS.md for persistence and limits.
+
+Deployers: supported inventory recipes take priority, otherwise powered deployers place plain supported building cubes two blocks ahead through a clear loaded air gap. Redstone pauses work. Named/component-bearing items and devices are refused. See docs/WORLD_PROCESSING.md for the whitelist and remaining limitations.

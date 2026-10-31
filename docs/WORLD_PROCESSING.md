@@ -1,4 +1,4 @@
-# World processing: native 0.8.0
+# World processing: native 0.9.0
 
 ## Depots
 
@@ -56,3 +56,13 @@ A horizontal powered saw with empty input rows attempts to fell an unstripped ov
 ## Chutes
 
 Vertical chutes catch falling/resting unowned item stacks above their own opening, respecting their real inventory capacity. Stacks held by an active processor are excluded until that job releases them. Existing top/bottom inventory transfers remain available. With no inventory below, they release one item at a time into air, water or onto a flat belt. A nearby discharged stack pauses further release until it falls/moves away; a blocked or unloaded outlet retains the contents. Component data survives capture and discharge. There is no smart-chute filtering or item-inside-chute animation yet.
+
+## Deployer block placement
+
+Power a deployer and put plain building cubes in its input row. Supported inventory deploying recipes take priority; otherwise it selects the first supported block stack and attempts a default-state placement two blocks ahead of its facing. All six directions are supported. The intervening block and destination must both be loaded air cells, and Horizon’s entity-obstruction check must accept the target shape. It does not replace existing blocks, liquids or partial shapes. A normal cycle takes 20 work units (one second at 32 RPM, four seconds at 8 RPM at 20 ticks/second). Redstone pauses the deployer without consuming inputs.
+
+The whitelist covers ordinary stone/dirt variants, bricks, glass, obsidian, terracotta, planks and ordinary logs/wood/stems/hyphae. The host must also recognize the default block state and mark it as a full collision cube. Components/names, inventories, fluids, falling blocks, TNT, slabs and directional devices are refused. This avoids discarding item data or inventing block-entity contents. Logs use their default axis; original placement-state selection is not replicated.
+
+Progress binds to the selected slot/material and target position. Changing either, or reducing the input count, restarts work; adding identical blocks does not starve it. The inventory snapshot is rechecked before placement. A refused host block write returns the input; an accepted write consumes exactly one block and processes ordinary engine level events. Completed placements occupy the target, so later cycles wait until it is clear. Inventory status displays the placement progress.
+
+This is a bounded block placer, not Create’s fake-player interaction system. World item-use recipes, harvesting, attacking, tool durability, contraption deployers and hand/arm animation remain absent. The host integration compiles but has not been exercised in a running game.

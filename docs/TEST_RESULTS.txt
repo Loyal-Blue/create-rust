@@ -1,55 +1,55 @@
    Compiling create-runtime v0.4.0 (/workspace/scratch/bb7f3b11e14c/create-horizon-project/crates/create-machines)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.47s
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.76s
      Running unittests src/lib.rs (create-horizon-project/target/debug/deps/create_horizon_core-579881f82d9c204b)
 
 running 10 tests
-test tests::connected_shaft_rotates_then_stops_when_source_removed ... ok
-test tests::still_water_stops_and_reversed_flow_reverses ... ok
-test tests::shaft_alignment_can_be_bypassed ... ok
-test tests::wheels_stay_horizontal_and_machines_upright ... ok
-test tests::wrench_is_reversible ... ok
-test tests::rotation_wraps_and_frame_duration_is_consistent ... ok
 test tests::directional_placement_has_all_six_faces ... ok
-test tests::perpendicular_shafts_do_not_connect ... ok
+test tests::connected_shaft_rotates_then_stops_when_source_removed ... ok
 test tests::incompatible_sources_jam_and_recover ... ok
+test tests::perpendicular_shafts_do_not_connect ... ok
+test tests::rotation_wraps_and_frame_duration_is_consistent ... ok
 test tests::radial_flow_does_not_drive_a_wheel ... ok
+test tests::shaft_alignment_can_be_bypassed ... ok
+test tests::still_water_stops_and_reversed_flow_reverses ... ok
+test tests::wrench_is_reversible ... ok
+test tests::wheels_stay_horizontal_and_machines_upright ... ok
 
 test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
      Running unittests src/lib.rs (create-horizon-project/target/debug/deps/create_kinetics-50e0eb15dd99a0e1)
 
 running 34 tests
-test state::port_tests::mixer_and_millstone_accept_vertical_drive ... ok
-test state::tests::defaults_to_y_and_ignores_other_blocks ... ok
 test state::port_tests::physical_output_and_input_ports_follow_facing ... ok
-test state::tests::wheels_and_cranks_start_off ... ok
+test state::port_tests::mixer_and_millstone_accept_vertical_drive ... ok
 test state::tests::reads_kind_and_axis ... ok
-test tests::a_large_cog_does_not_mesh_with_a_small_one_beside_it ... ok
-test tests::a_shaft_crossways_does_not_connect ... ok
-test tests::a_ring_of_small_cogs_turns ... ok
+test state::tests::wheels_and_cranks_start_off ... ok
 test tests::a_shaft_line_keeps_its_speed ... ok
-test tests::bevel_gears_have_reciprocal_signs_for_every_pair_of_axes ... ok
+test tests::a_large_cog_does_not_mesh_with_a_small_one_beside_it ... ok
+test state::tests::defaults_to_y_and_ignores_other_blocks ... ok
+test tests::a_ring_of_small_cogs_turns ... ok
+test tests::a_shaft_crossways_does_not_connect ... ok
 test tests::an_inactive_source_is_idle ... ok
-test tests::configured_source_speed_clamps_and_nonfinite_stops ... ok
-test tests::disabled_clutch_splits_and_reengaging_merges ... ok
 test tests::a_slower_source_in_the_same_direction_is_overpowered ... ok
+test tests::bevel_gears_have_reciprocal_signs_for_every_pair_of_axes ... ok
 test tests::extreme_coordinates_do_not_wrap_or_panic ... ok
-test tests::ids_round_trip ... ok
+test tests::configured_source_speed_clamps_and_nonfinite_stops ... ok
 test tests::gearshift_reverses_only_the_output_half ... ok
-test tests::flat_belts_share_drive_and_preserve_world_direction ... ok
+test tests::disabled_clutch_splits_and_reengaging_merges ... ok
 test tests::gearbox_routes_four_ports_in_plane ... ok
+test tests::ids_round_trip ... ok
 test tests::malformed_states_are_rejected_instead_of_silently_becoming_y ... ok
+test tests::missing_shaft_port_prevents_a_connection ... ok
+test tests::flat_belts_share_drive_and_preserve_world_direction ... ok
 test tests::large_to_small_doubles_and_small_to_large_halves ... ok
 test tests::parallel_chain_drives_relay_rotation ... ok
 test tests::small_cogs_do_not_mesh_along_their_axis ... ok
-test tests::missing_shaft_port_prevents_a_connection ... ok
 test tests::removing_a_bridge_and_a_source_recomputes_components ... ok
-test tests::sources_pushing_against_each_other_conflict ... ok
 test tests::small_cogs_side_by_side_reverse ... ok
+test tests::sources_pushing_against_each_other_conflict ... ok
 test tests::speed_up_beyond_the_cap_stops_every_member ... ok
+test tests::speeds_do_not_depend_on_insertion_order ... ok
 test tests::source_priority_accounts_for_all_gear_ratios ... ok
 test tests::too_much_stress_stops_the_network ... ok
-test tests::speeds_do_not_depend_on_insertion_order ... ok
 test tests::two_large_cogs_share_a_small_one ... ok
 test tests::two_sources_add_their_capacity ... ok
 test tests::a_long_reduction_train_does_not_lose_its_driver_to_float_overflow ... ok
@@ -58,94 +58,100 @@ test result: ok. 34 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fin
 
      Running unittests src/lib.rs (create-horizon-project/target/debug/deps/create_runtime-af7b194e6b6e9782)
 
-running 69 tests
-test fluids::bounds_tests::endpoints_are_limited_to_sixteen_steps ... ok
+running 75 tests
 test fluids::shared_tests::different_members_of_the_same_tank_cannot_form_a_pump_loop ... ok
-test fluids::shared_tests::member_ports_route_shared_volumes_above_one_block_capacity ... ok
-test fluids::source_tests::reverse_flow_cannot_dump_stored_fluid_into_the_source ... ok
-test fluids::source_tests::renewable_source_obeys_pump_budget_without_persisting_a_fake_tank ... ok
-test fluids::tests::branches_share_one_conserved_pump_budget ... ok
 test fluids::shared_tests::a_shared_group_never_accepts_an_incompatible_fluid ... ok
+test fluids::bounds_tests::endpoints_are_limited_to_sixteen_steps ... ok
+test fluids::shared_tests::member_ports_route_shared_volumes_above_one_block_capacity ... ok
 test fluids::tests::a_pipe_loop_never_copies_fluid ... ok
+test fluids::tests::branches_share_one_conserved_pump_budget ... ok
 test fluids::tests::extracting_a_bucket_can_span_input_and_output ... ok
+test fluids::source_tests::renewable_source_obeys_pump_budget_without_persisting_a_fake_tank ... ok
 test fluids::tests::reversing_uses_the_other_inlet ... ok
-test fluids::source_tests::incompatible_or_full_tanks_never_draw_world_water ... ok
-test surface::animation_tests::mixer_lowers_holds_and_retracts ... ok
 test fluids::tests::unloaded_gaps_and_disconnected_ports_do_not_route ... ok
+test fluids::source_tests::incompatible_or_full_tanks_never_draw_world_water ... ok
+test fluids::source_tests::reverse_flow_cannot_dump_stored_fluid_into_the_source ... ok
+test placing::tests::named_items_and_unsafe_blocks_are_refused ... ok
+test placing::tests::changed_inventory_rejects_a_stale_commit ... ok
 test fluids::tests::tanks_reject_mixing_and_count_both_saved_stores ... ok
+test placing::tests::targets_are_cardinal_and_checked_for_overflow ... ok
+test placing::tests::no_power_preserves_work_and_growing_streams_do_not_starve_it ... ok
+test placing::tests::changed_targets_and_materials_reset_work ... ok
+test surface::animation_tests::mixer_lowers_holds_and_retracts ... ok
 test surface::animation_tests::press_retracts_and_never_exceeds_its_gap ... ok
 test surface::crusher_tests::only_inward_opposed_horizontal_wheels_form_a_pair ... ok
-test surface::tests::stopping_preserves_work_but_not_a_duplicate_inventory ... ok
-test surface::tests::surface_regions_are_bounded_and_directional ... ok
 test surface::tests::new_entities_and_replaced_material_reset_but_merging_does_not_starve_work ... ok
 test fluids::bounds_tests::oversized_pipe_components_stop_without_mutating_storage ... ok
 test surface::tests::filling_reserves_one_bottle_and_fluid_per_cycle ... ok
-test surface::top_tests::top_capture_is_local_and_finite ... ok
+test surface::tests::surface_regions_are_bounded_and_directional ... ok
+test surface::tests::stopping_preserves_work_but_not_a_duplicate_inventory ... ok
 test surface::top_tests::full_drain_does_not_consume_world_bucket_or_advance_rng ... ok
+test surface::top_tests::top_capture_is_local_and_finite ... ok
+test surface::top_tests::top_saw_cuts_one_item_per_cycle_and_keeps_remainder_components ... ok
 test tanks::tests::complete_square_columns_form_and_irregular_shapes_do_not ... ok
 test tanks::tests::gather_scatter_saves_only_per_block_volumes_and_preserves_metadata ... ok
-test tanks::tests::missing_members_or_oversized_views_never_commit ... ok
-test tanks::tests::mixed_or_overfull_legacy_data_remain_unmerged ... ok
-test tanks::tests::oversized_components_never_form_partial_groups ... ok
-test tanks::tests::shared_capacity_and_bucket_extraction_are_atomic ... ok
-test tests::blocked_transfer_never_consumes ... ok
-test surface::top_tests::top_saw_cuts_one_item_per_cycle_and_keeps_remainder_components ... ok
-test tests::component_inputs_process_and_surviving_items_keep_metadata ... ok
+test surface::top_tests::loose_bucket_emptying_keeps_real_fluid_and_returns_container ... ok
 test surface::tests::blocked_bulk_output_preserves_every_input_and_rng ... ok
-test tests::fluid_transfer_conserves_total_and_budget ... ok
-test tests::fluid_capacity_and_roundtrip ... ok
+test surface::depot_tests::incoming_material_does_not_starve_a_depot_press ... ok
+test tanks::tests::mixed_or_overfull_legacy_data_remain_unmerged ... ok
+test tanks::tests::shared_capacity_and_bucket_extraction_are_atomic ... ok
+test tanks::tests::oversized_components_never_form_partial_groups ... ok
+test tests::blocked_transfer_never_consumes ... ok
+test tanks::tests::missing_members_or_oversized_views_never_commit ... ok
 test tests::configured_motor_speed_is_validated_when_loading ... ok
+test tests::fluid_transfer_conserves_total_and_budget ... ok
+test tests::component_inputs_process_and_surviving_items_keep_metadata ... ok
+test tests::fluid_capacity_and_roundtrip ... ok
 test tests::invalid_saved_data_is_rejected ... ok
+test tests::full_output_preserves_inputs_and_rng ... ok
 test tests::local_inputs_and_progress_reasons_are_visible ... ok
 test tests::move_preserves_components_and_actual_limits ... ok
-test tests::full_output_preserves_inputs_and_rng ... ok
-test tests::geared_press_pipeline_survives_state_reload_and_conserves_items ... ok
-test surface::top_tests::loose_bucket_emptying_keeps_real_fluid_and_returns_container ... ok
-test tests::processes_real_slots_only ... ok
 test tests::rotation_uses_elapsed_time_and_is_continuous_across_packets ... ok
+test placing::tests::slow_drive_completes_once_and_consumes_one_item ... ok
+test tests::processes_real_slots_only ... ok
 test tests::rotor_phase_survives_speed_changes_and_reload ... ok
 test tests::stale_inventory_cannot_commit ... ok
+test tests::geared_press_pipeline_survives_state_reload_and_conserves_items ... ok
 test tests::transport_settings_roundtrip_and_old_saves_keep_defaults ... ok
 test transport::chute_tests::a_full_chute_never_removes_the_falling_stack ... ok
 test transport::chute_tests::mouths_capture_only_their_own_falling_lane ... ok
-test tests::stopped_drive_cannot_process_or_consume_input ... ok
 test transport::mouth_tests::mouths_ignore_neighbor_lanes_and_items_behind ... ok
 test transport::tests::belt_reverses_stops_and_ignores_airborne_items ... ok
 test transport::tests::connector_checks_axis_length_and_corners ... ok
-test surface::depot_tests::incoming_material_does_not_starve_a_depot_press ... ok
+test tests::stopped_drive_cannot_process_or_consume_input ... ok
 test transport::tests::filtering_keeps_component_metadata ... ok
 test transport::tests::machine_exports_do_not_steal_unprocessed_inputs ... ok
 test trees::tests::coordinate_overflow_is_rejected ... ok
-test trees::tests::bare_pillars_and_stripped_logs_do_not_form_trees ... ok
 test trees::tests::diagonal_branches_fall_top_down_and_roots_remain ... ok
+test trees::tests::bare_pillars_and_stripped_logs_do_not_form_trees ... ok
 test trees::tests::unloaded_neighbors_abort_the_whole_plan ... ok
 test trees::tests::other_species_and_plank_builds_are_excluded ... ok
-test worldgen::tests::never_retro_generates_existing_chunks ... ok
 test worldgen::tests::bounded_repeatable_veins ... ok
+test worldgen::tests::never_retro_generates_existing_chunks ... ok
 test surface::tests::whole_named_stack_presses_in_one_cycle ... ok
-test tests::press_over_basin_falls_back_without_resetting_progress ... ok
 test trees::tests::large_trees_abort_instead_of_returning_a_partial_cut ... ok
+test surface::depot_tests::a_full_depot_cannot_consume_or_reroll_a_batch ... ok
+test tests::press_over_basin_falls_back_without_resetting_progress ... ok
 test tests::waterwheel_speed_press_finishes_within_five_seconds ... ok
 test surface::crusher_tests::ore_stacks_crush_in_bulk_with_saved_random_state ... ok
-test surface::depot_tests::a_full_depot_cannot_consume_or_reroll_a_batch ... ok
 
-test result: ok. 69 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+test result: ok. 75 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
 
      Running unittests src/lib.rs (create-horizon-project/target/debug/deps/create_simulation-865efe183943e3a2)
 
 running 14 tests
+test tests::fluid_filling_reserves_both_the_bottle_and_fluid ... ok
 test tests::no_power_preserves_inputs_and_work ... ok
 test tests::repeated_ingredients_cannot_share_a_single_item ... ok
-test tests::actual_iron_pressing_consumes_exactly_one_ingot ... ok
-test tests::fluid_filling_reserves_both_the_bottle_and_fluid ... ok
-test tests::blocked_output_cannot_consume_inputs_or_reroll ... ok
-test tests::retained_tools_are_reserved_and_returned_after_a_craft ... ok
 test tests::malformed_saves_fail_closed ... ok
-test tests::stock_insertion_is_atomic_and_checks_stack_and_fluid_limits ... ok
-test wood::tests::logs_strip_then_produce_six_planks ... ok
+test tests::blocked_output_cannot_consume_inputs_or_reroll ... ok
 test tests::hot_mixing_requires_heat_and_at_least_32_rpm ... ok
+test tests::actual_iron_pressing_consumes_exactly_one_ingot ... ok
+test tests::stock_insertion_is_atomic_and_checks_stack_and_fluid_limits ... ok
 test wood::tests::ids_are_unique_and_inputs_and_outputs_are_balanced ... ok
 test wood::tests::output_filter_selects_stairs_without_matching_slabs ... ok
+test wood::tests::logs_strip_then_produce_six_planks ... ok
+test tests::retained_tools_are_reserved_and_returned_after_a_craft ... ok
 test tests::save_reload_preserves_recipe_progress_and_random_state ... ok
 test tests::every_imported_recipe_can_complete_with_valid_inputs ... ok
 
